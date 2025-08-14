@@ -39,6 +39,7 @@ services:
       REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
       GOOGLE_PROJECT_ID: ${SERVICE_GOOGLE_PROJECT_ID}
       GOOGLE_APPLICATION_CREDENTIALS_JSON: ${SERVICE_GOOGLE_CREDENTIALS}
+      SERVICE_FQDN_WEB_3000: "" # Coolify will generate the public URL
     ports:
       - "3000:3000"
     command: ["node", "build/index.js"]
