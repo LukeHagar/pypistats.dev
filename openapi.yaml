@@ -9,7 +9,7 @@ servers:
   - url: https://{host}
     variables:
       host:
-        default: localhost:5173
+        default: pypistats.dev
 paths:
   /api/packages/{package}/recent:
     get:
