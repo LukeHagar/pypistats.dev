@@ -22,7 +22,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generate Prisma client and build SvelteKit (Node adapter)
-RUN pnpm prisma generate && pnpm prisma migrate deploy
+RUN pnpm prisma generate
 
 RUN pnpm build
 

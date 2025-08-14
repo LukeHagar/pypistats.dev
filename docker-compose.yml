@@ -45,7 +45,7 @@ services:
       SERVICE_FQDN_WEB_3000: "" # Coolify will generate the public URL
     ports:
       - "3000:3000"
-    command: ["node", "build/index.js"]
+    command: ["sh", "-c", "pnpm prisma migrate deploy && node build/index.js"]
 
 volumes:
   pgdata:
