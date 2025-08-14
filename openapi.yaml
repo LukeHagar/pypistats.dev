@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: PyPI Stats API
   version: 1.0.0
@@ -237,7 +237,7 @@ paths:
         - in: path
           name: type
           required: true
-          schema: { type: string, enum: [overall, python_major, python_minor, system] }
+          schema: { type: string, enum: [overall, python_major, python_minor, system, installer, version] }
         - in: query
           name: chart
           schema: { type: string, enum: [line, bar] }
@@ -254,16 +254,49 @@ paths:
           name: os
           schema: { type: string, enum: [Windows, Linux, Darwin, other] }
           description: Only for type=system
+        - in: query
+          name: format
+          schema: { type: string, enum: [json, data] }
+          description: Return JSON payload for interactive charts instead of a PNG image
+        - in: query
+          name: nocache
+          schema: { type: string }
+          description: Set to '1' to bypass server-side chart cache
+        - in: query
+          name: cache
+          schema: { type: string }
+          description: Set to 'false' to bypass server-side chart cache
       responses:
         '200':
-          description: PNG image
+          description: PNG image by default, or JSON when format=json
           content:
             image/png:
               schema:
                 type: string
                 format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string }
+                  chartType: { type: string, enum: [line, bar] }
+                  title: { type: string }
+                  labels:
+                    type: array
+                    items: { type: string }
+                  datasets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label: { type: string }
+                        data:
+                          type: array
+                          items: { type: number }
         '400': { description: Bad request }
         '404': { description: Package not found }
+
 
 components:
   securitySchemes: {}
