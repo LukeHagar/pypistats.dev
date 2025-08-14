@@ -13,7 +13,7 @@ ENV DATABASE_URL=$DATABASE_URL
 COPY package.json pnpm-lock.yaml* ./
 
 # Enable and use pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
+RUN corepack enable && corepack prepare pnpm@@10.14.0 --activate
 
 # Install dependencies (include devDependencies needed for build)
 RUN pnpm install --frozen-lockfile --prod=false
@@ -23,6 +23,9 @@ COPY . .
 
 # Generate Prisma client and build SvelteKit (Node adapter)
 RUN pnpm prisma generate
+
+# Make sure SvelteKit has synced types/config now that config files are present
+RUN pnpm run prepare
 
 RUN pnpm build
 
