@@ -17,10 +17,13 @@ services:
 
   redis:
     image: redis:latest
+    environment:
+      SERVICE_PASSWORD_REDIS: ${SERVICE_PASSWORD_REDIS}
+    command: ["redis-server", "--requirepass", "${SERVICE_PASSWORD_REDIS}"]
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -38,6 +41,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      SERVICE_PASSWORD_POSTGRES: ${SERVICE_PASSWORD_POSTGRES}
+      SERVICE_PASSWORD_REDIS: ${SERVICE_PASSWORD_REDIS}
       DATABASE_URL: postgresql://pypistats:${SERVICE_PASSWORD_POSTGRES}@db:5432/pypistats?schema=public
       REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
       GOOGLE_PROJECT_ID: ${SERVICE_GOOGLE_PROJECT_ID}
