@@ -70,11 +70,14 @@ function getRecentBounds(category: string) {
   const today = new Date();
   let start = new Date(today);
   if (category === 'day') {
-    // include today
+    // For day, use yesterday since today's data isn't available yet
+    start = new Date(today.getTime() - 24 * 60 * 60 * 1000);
   } else if (category === 'week') {
-    start = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // For week, use last 8 days (7 + 1 extra day)
+    start = new Date(today.getTime() - 8 * 24 * 60 * 60 * 1000);
   } else if (category === 'month') {
-    start = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // For month, use last 31 days (30 + 1 extra day)
+    start = new Date(today.getTime() - 31 * 24 * 60 * 60 * 1000);
   }
   return { start };
 }

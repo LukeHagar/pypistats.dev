@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { onMount, onDestroy } from 'svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	const { data }: { data: PageData } = $props();
 
 	let overallCanvas: HTMLCanvasElement | null = $state(null);
@@ -290,7 +291,7 @@
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await data.recentStats}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading recent stats..." /></td></tr>
 									{:then rs}
 										{#each [['week', Number((rs as any)?.last_week || 0)], ['month', Number((rs as any)?.last_month || 0)]] as [period, count]}
 											<tr>
@@ -328,7 +329,7 @@
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await (data as any).summaryTotals}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading overall stats..." /></td></tr>
 									{:then totals}
 										{#each Object.entries(totals?.overall || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
@@ -368,7 +369,7 @@
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await (data as any).summaryTotals}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading system stats..." /></td></tr>
 									{:then totals}
 										{#each Object.entries(totals?.system || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
@@ -408,7 +409,7 @@
 							</thead>
 							<tbody class="divide-y divide-gray-800 bg-gray-950">
 								{#await (data as any).summaryTotals}
-									<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+									<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading Python versions..." /></td></tr>
 								{:then totals}
 									{#each buildPythonVersionRows(totals?.python_major || {}, totals?.python_minor || {}) as row}
 										<tr class={row.kind === 'major' ? 'bg-gray-900' : ''}>

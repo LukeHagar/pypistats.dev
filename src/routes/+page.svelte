@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
 	const { data } = $props<{ data: PageData }>();
 	
@@ -41,7 +42,7 @@
 		</div>
 		
         <div class="mt-8 text-sm text-gray-400">
-            Tracking {data.packageCount && data.packageCount > 0 ? data.packageCount.toLocaleString() : '0'} packages
+            Tracking {#await data.packageCount}...{:then count}{count !== undefined ? count.toLocaleString() : '0'}{:catch}0{/await} packages
         </div>
 	</div>
 	
@@ -50,18 +51,24 @@
             <div class="rounded-lg border border-gray-800 bg-gray-900 p-6 shadow-sm">
                 <h3 class="mb-2 text-lg font-semibold text-gray-100">Popular Packages (last 30 days)</h3>
                 <p class="mb-4 text-gray-400">Top projects by downloads (without mirrors)</p>
-				{#if data.popular && data.popular.length > 0}
-                    <ul class="divide-y divide-gray-800">
-						{#each data.popular as row}
-							<li class="py-2 flex items-center justify-between">
-                                <a class="font-medium text-blue-400 hover:text-blue-300" href="/packages/{row.package}" data-sveltekit-preload-data="off">{row.package}</a>
-                                <span class="text-sm text-gray-400">{row.downloads.toLocaleString()}</span>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-                    <div class="text-sm text-gray-400">No data yet.</div>
-				{/if}
+				{#await data.popular}
+					<div class="text-sm text-gray-400"><LoadingSpinner size="sm" text="Loading popular packages..." /></div>
+				{:then popular}
+					{#if popular && popular.length > 0}
+						<ul class="divide-y divide-gray-800">
+							{#each popular as row}
+								<li class="py-2 flex items-center justify-between">
+									<a class="font-medium text-blue-400 hover:text-blue-300" href="/packages/{row.package}" data-sveltekit-preload-data="off">{row.package}</a>
+									<span class="text-sm text-gray-400">{row.downloads.toLocaleString()}</span>
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<div class="text-sm text-gray-400">No data yet.</div>
+					{/if}
+				{:catch}
+					<div class="text-sm text-gray-400">Failed to load.</div>
+				{/await}
 			</div>
 		
         <div class="rounded-lg border border-gray-800 bg-gray-900 p-6 shadow-sm">

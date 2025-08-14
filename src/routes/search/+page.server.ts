@@ -5,24 +5,18 @@ export const load = async ({ url }) => {
 	
 	if (!searchTerm) {
 		return {
-			packages: [],
+			packages: Promise.resolve([]),
 			searchTerm: null
 		};
 	}
 	
-	try {
-		const packages = await searchPackages(searchTerm);
-		return {
-			packages,
-			searchTerm
-		};
-	} catch (error) {
-		console.error('Error searching packages:', error);
-		return {
-			packages: [],
-			searchTerm
-		};
-	}
+	// Return promise directly for streaming - SvelteKit will handle the streaming
+	const packagesP = searchPackages(searchTerm);
+	
+	return {
+		packages: packagesP,
+		searchTerm
+	};
 }; 
  
 
