@@ -36,15 +36,53 @@ export class DataProcessor {
     };
 
     // Handle credentials from environment variable or file
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-      // Use JSON credentials from environment variable
+    const rawCredentialsEnv = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    if (rawCredentialsEnv) {
+      // Add diagnostics without leaking secrets
+      const trimmed = rawCredentialsEnv.trim();
+      const firstChar = trimmed[0];
+      const looksLikeJson = firstChar === '{' || firstChar === '[';
+      const looksLikeBase64 = !looksLikeJson && /^[A-Za-z0-9+/=\n\r]+$/.test(trimmed);
+      console.log(
+        'BigQuery credentials detected in GOOGLE_APPLICATION_CREDENTIALS_JSON',
+        `length=${trimmed.length}`,
+        `startsWith=${firstChar}`,
+        `jsonLikely=${looksLikeJson}`,
+        `base64Likely=${looksLikeBase64}`
+      );
+
       try {
-        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-        bigQueryConfig.credentials = credentials;
-        bigQueryConfig.credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+        let parsed: any | null = null;
+        if (looksLikeJson) {
+          parsed = JSON.parse(trimmed);
+        } else {
+          // Try base64 decode → JSON parse
+          try {
+            const decoded = Buffer.from(trimmed, 'base64').toString('utf8');
+            console.log('BigQuery credentials decoded from base64', `decodedLength=${decoded.length}`);
+            parsed = JSON.parse(decoded);
+          } catch (e) {
+            console.error('BigQuery credentials base64 decode/parse failed');
+            throw e;
+          }
+        }
+
+        if (parsed && typeof parsed.private_key === 'string') {
+          parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+        }
+        bigQueryConfig.credentials = parsed;
       } catch (error) {
-        console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON:', error);
-        throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON format');
+        console.error(
+          'Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON. '
+            + 'Ensure it is valid JSON or base64-encoded JSON with escaped newlines in private_key.'
+        );
+        // Fallback: if a key file path is provided, use it; otherwise, surface a clearer error
+        if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          console.warn('Falling back to GOOGLE_APPLICATION_CREDENTIALS keyFilename');
+          bigQueryConfig.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+        } else {
+          throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON format');
+        }
       }
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       // Use file path (existing behavior)
