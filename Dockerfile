@@ -15,8 +15,8 @@ COPY package.json pnpm-lock.yaml* ./
 # Enable and use pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies (include devDependencies needed for build)
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Copy the rest of the source
 COPY . .
