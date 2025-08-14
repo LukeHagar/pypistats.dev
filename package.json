@@ -22,11 +22,11 @@
 		"@prisma/client": "^6.13.0",
 		"@sveltejs/adapter-node": "^5.2.8",
 		"@types/node-cron": "^3.0.11",
-		"node-cron": "^4.2.1",
-		"redis": "^5.7.0",
+		"canvas": "^3.1.2",
 		"chart.js": "^4.4.4",
 		"chartjs-node-canvas": "^5.0.0",
-		"canvas": "^3.1.2"
+		"node-cron": "^4.2.1",
+		"redis": "^5.7.0"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^6.0.1",
@@ -48,8 +48,12 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
+			"@prisma/client",
+			"@prisma/engines",
+			"@tailwindcss/oxide",
+			"canvas",
 			"esbuild",
-			"canvas"
+			"prisma"
 		]
 	}
 }
