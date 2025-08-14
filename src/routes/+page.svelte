@@ -41,7 +41,7 @@
 		</div>
 		
         <div class="mt-8 text-sm text-gray-400">
-            Tracking {data.packageCount ? data.packageCount.toLocaleString() : 'tons of'} packages
+            Tracking {data.packageCount && data.packageCount > 0 ? data.packageCount.toLocaleString() : '0'} packages
         </div>
 	</div>
 	

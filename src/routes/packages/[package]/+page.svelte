@@ -59,18 +59,18 @@
 			const majorDownloads = Number(pyMajorTotalsMap[major] || 0);
 			if (majorDownloads > 0 || major in pyMajorTotalsMap) {
 				rows.push({ kind: 'major', label: major, downloads: majorDownloads });
-				const minors: Array<[string, number]> = Object.entries(pyMinorTotalsMap)
-					.filter(([k]) => (major === 'unknown' ? k === 'unknown' : k.startsWith(major + '.')))
-					.map(([k, v]) => [k, Number(v)]);
-				minors.sort((a, b) => {
-					const ak =
-						a[0] === 'unknown' ? Number.POSITIVE_INFINITY : parseFloat(a[0].split('.')[1] || '0');
-					const bk =
-						b[0] === 'unknown' ? Number.POSITIVE_INFINITY : parseFloat(b[0].split('.')[1] || '0');
-					return ak - bk;
-				});
-				for (const [minor, dls] of minors)
-					rows.push({ kind: 'minor', label: minor, downloads: dls });
+				// Only show minor breakdown for known major versions.
+				if (major !== 'unknown') {
+					const minors: Array<[string, number]> = Object.entries(pyMinorTotalsMap)
+						.filter(([k]) => k.startsWith(major + '.'))
+						.map(([k, v]) => [k, Number(v)]);
+					minors.sort((a, b) => {
+						const ak = parseFloat(a[0].split('.')[1] || '0');
+						const bk = parseFloat(b[0].split('.')[1] || '0');
+						return ak - bk;
+					});
+					for (const [minor, dls] of minors) rows.push({ kind: 'minor', label: minor, downloads: dls });
+				}
 			}
 		}
 		return rows;
