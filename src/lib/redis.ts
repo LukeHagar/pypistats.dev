@@ -6,10 +6,19 @@ let isConnecting = false;
 let isDisconnecting = false;
 
 export function getRedisClient() {
+  const redisUrl = process.env.REDIS_URL;
+  // Skip connecting if no REDIS_URL is provided (e.g., during build)
+  if (!redisUrl) {
+    if (typeof process !== 'undefined') {
+      console.warn('Redis disabled: REDIS_URL not set');
+    }
+    return null;
+  }
+
   if (!redisClient && !isConnecting) {
     isConnecting = true;
     redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      url: redisUrl,
     });
 
     redisClient.on('error', (err) => {
