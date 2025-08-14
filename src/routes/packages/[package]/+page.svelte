@@ -391,41 +391,41 @@
 				</div>
 
 				<div class="mt-8">
-					<h3 class="text-md mb-2 font-semibold text-gray-900">Python Versions</h3>
+					<h3 class="text-md mb-2 font-semibold text-gray-100">Python Versions</h3>
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
 							<thead>
 								<tr>
 									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 										>Version</th
 									>
 									<th
-										class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase"
+										class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 										>Downloads</th
 									>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-200 bg-white">
+							<tbody class="divide-y divide-gray-800 bg-gray-950">
 								{#await (data as any).summaryTotals}
-									<tr><td class="px-6 py-3 text-sm text-gray-500" colspan="2">Loading…</td></tr>
+									<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
 								{:then totals}
 									{#each buildPythonVersionRows(totals?.python_major || {}, totals?.python_minor || {}) as row}
-										<tr class={row.kind === 'major' ? 'bg-gray-50' : ''}>
-											<td class="px-6 py-3 text-sm text-gray-700 capitalize">
+										<tr class={row.kind === 'major' ? 'bg-gray-900' : ''}>
+											<td class="px-6 py-3 text-sm text-gray-300 capitalize">
 												{#if row.kind === 'major'}
 													Python {row.label}
 												{:else}
 													<span class="inline-block pl-6">{row.label}</span>
 												{/if}
 											</td>
-											<td class="px-6 py-3 text-right text-sm font-semibold text-gray-900"
+											<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
 												>{formatNumber(row.downloads)}</td
 											>
 										</tr>
 									{/each}
 								{:catch _}
-									<tr><td class="px-6 py-3 text-sm text-red-600" colspan="2">Failed to load</td></tr
+									<tr><td class="px-6 py-3 text-sm text-red-400" colspan="2">Failed to load</td></tr
 									>
 								{/await}
 							</tbody>
