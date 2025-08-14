@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: pypistats
       POSTGRES_USER: pypistats
-      POSTGRES_PASSWORD: pypistats
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -35,17 +35,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://pypistats:pypistats@db:5432/pypistats?schema=public
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://pypistats:${SERVICE_PASSWORD_POSTGRES}@db:5432/pypistats?schema=public
+      REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
       ENABLE_CRON: "true"
-      # Set your BigQuery project and credentials
-      # GOOGLE_PROJECT_ID: your-project
-      # GOOGLE_APPLICATION_CREDENTIALS_JSON: '{"type":"service_account",...}'
+      GOOGLE_PROJECT_ID: ${SERVICE_GOOGLE_PROJECT_ID}
+      GOOGLE_APPLICATION_CREDENTIALS_JSON: ${SERVICE_GOOGLE_CREDENTIALS}
     ports:
       - "3000:3000"
     command: ["node", "build/index.js"]
 
 volumes:
   pgdata:
-
-
