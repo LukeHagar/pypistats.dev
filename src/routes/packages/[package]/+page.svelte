@@ -161,29 +161,29 @@
 </svelte:head>
 
 <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-    <div class="mb-8">
-        <h1 class="mb-2 text-3xl font-bold text-gray-100">{data.packageName}</h1>
-        <p class="text-gray-400">Download statistics from PyPI</p>
+	<div class="mb-8">
+		<h1 class="mb-2 text-3xl font-bold text-gray-100">{data.packageName}</h1>
+		<p class="text-gray-400">Download statistics from PyPI</p>
 
 		{#if data.meta}
 			{#await data.meta}
-                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
-                    <span
-                        class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300"
-                        >Loading…</span
-                    >
-                </div>
+				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+					<span
+						class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300"
+						>Loading…</span
+					>
+				</div>
 			{:then meta}
-                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
 					{#if meta.version}
 						<span
-                            class="inline-flex items-center rounded-full border border-blue-900 bg-blue-950 px-2.5 py-1 text-blue-300"
+							class="inline-flex items-center rounded-full border border-blue-900 bg-blue-950 px-2.5 py-1 text-blue-300"
 							>v{meta.version}</span
 						>
 					{/if}
 					{#if meta.latestReleaseDate}
 						<span
-                            class="inline-flex items-center rounded-full border border-green-900 bg-green-950 px-2.5 py-1 text-green-300"
+							class="inline-flex items-center rounded-full border border-green-900 bg-green-950 px-2.5 py-1 text-green-300"
 							>Released {meta.latestReleaseDate}</span
 						>
 					{/if}
@@ -194,8 +194,8 @@
 							{#if totals?.system}
 								{#await Promise.resolve(Object.entries(totals.system).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topSys}
 									{#if topSys}
-                                    <span
-                                        class="inline-flex items-center rounded-full border border-purple-900 bg-purple-950 px-2.5 py-1 text-purple-300"
+										<span
+											class="inline-flex items-center rounded-full border border-purple-900 bg-purple-950 px-2.5 py-1 text-purple-300"
 											>Popular system: {topSys[0]}</span
 										>
 									{/if}
@@ -208,8 +208,8 @@
 							{#if totals?.installer}
 								{#await Promise.resolve(Object.entries(totals.installer).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topInst}
 									{#if topInst}
-                                    <span
-                                        class="inline-flex items-center rounded-full border border-indigo-900 bg-indigo-950 px-2.5 py-1 text-indigo-300"
+										<span
+											class="inline-flex items-center rounded-full border border-indigo-900 bg-indigo-950 px-2.5 py-1 text-indigo-300"
 											>Popular installer: {topInst[0]}</span
 										>
 									{/if}
@@ -222,8 +222,8 @@
 							{#if totals?.version}
 								{#await Promise.resolve(Object.entries(totals.version).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topVer}
 									{#if topVer}
-                                        <span
-                                            class="inline-flex items-center rounded-full border border-amber-900 bg-amber-950 px-2.5 py-1 text-amber-300"
+										<span
+											class="inline-flex items-center rounded-full border border-amber-900 bg-amber-950 px-2.5 py-1 text-amber-300"
 											>Top version: {topVer[0]}</span
 										>
 									{/if}
@@ -232,16 +232,16 @@
 						{/await}
 					{/if}
 				</div>
-                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
 					<a
-                        class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
+						class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
 						href={meta.pypiUrl}
 						rel="noopener"
 						target="_blank">View on PyPI</a
 					>
 					{#if meta.homePage}
 						<a
-                            class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
+							class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
 							href={meta.homePage}
 							rel="noopener"
 							target="_blank">Homepage</a
@@ -251,7 +251,7 @@
 						{#each Object.entries(meta.projectUrls).filter(([label, url]) => !['homepage'].includes(label.toLowerCase())) as [label, url]}
 							{#if typeof url === 'string'}
 								<a
-                                    class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
+									class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
 									href={url}
 									rel="noopener"
 									target="_blank">{label}</a
@@ -273,29 +273,29 @@
 			<div class="p-6">
 				<div class="flex flex-wrap gap-6">
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-                        <h4 class="mb-2 text-sm font-semibold text-gray-300">Recent</h4>
+						<h4 class="mb-2 text-sm font-semibold text-gray-300">Recent</h4>
 						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200">
+							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
 								<thead>
 									<tr>
 										<th
-                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Period</th
 										>
 										<th
-                                        class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
 										>
 									</tr>
 								</thead>
-                                <tbody class="divide-y divide-gray-800 bg-gray-950">
+								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await data.recentStats}
-                                        <tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
 									{:then rs}
 										{#each [['week', Number((rs as any)?.last_week || 0)], ['month', Number((rs as any)?.last_month || 0)]] as [period, count]}
 											<tr>
-                                                <td class="px-6 py-3 text-sm text-gray-300 capitalize">{period}</td>
-                                                <td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
+												<td class="px-6 py-3 text-sm text-gray-300 capitalize">{period}</td>
+												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
 													>{formatNumber(Number(count))}</td
 												>
 											</tr>
@@ -311,31 +311,31 @@
 						</div>
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-                        <h4 class="mb-2 text-sm font-semibold text-gray-300">Overall</h4>
+						<h4 class="mb-2 text-sm font-semibold text-gray-300">Overall</h4>
 						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200">
+							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
 								<thead>
 									<tr>
 										<th
-                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Category</th
 										>
 										<th
-                                        class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
 										>
 									</tr>
 								</thead>
-                                <tbody class="divide-y divide-gray-800 bg-gray-950">
+								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await (data as any).summaryTotals}
-                                        <tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
 									{:then totals}
 										{#each Object.entries(totals?.overall || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
-                                                <td class="px-6 py-3 text-sm text-gray-300 capitalize"
+												<td class="px-6 py-3 text-sm text-gray-300 capitalize"
 													>{k.replace(/_/g, ' ')}</td
 												>
-                                                <td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
+												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
 													>{formatNumber(Number(v))}</td
 												>
 											</tr>
@@ -351,29 +351,29 @@
 						</div>
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-                        <h4 class="mb-2 text-sm font-semibold text-gray-300">Systems</h4>
+						<h4 class="mb-2 text-sm font-semibold text-gray-300">Systems</h4>
 						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200">
+							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
 								<thead>
 									<tr>
 										<th
-                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>System</th
 										>
 										<th
-                                        class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
+											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
 										>
 									</tr>
 								</thead>
-                                <tbody class="divide-y divide-gray-800 bg-gray-950">
+								<tbody class="divide-y divide-gray-800 bg-gray-950">
 									{#await (data as any).summaryTotals}
-                                        <tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
+										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2">Loading…</td></tr>
 									{:then totals}
 										{#each Object.entries(totals?.system || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
-                                                <td class="px-6 py-3 text-sm text-gray-300 capitalize">{k}</td>
-                                                <td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
+												<td class="px-6 py-3 text-sm text-gray-300 capitalize">{k}</td>
+												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
 													>{formatNumber(Number(v))}</td
 												>
 											</tr>
@@ -393,7 +393,7 @@
 				<div class="mt-8">
 					<h3 class="text-md mb-2 font-semibold text-gray-900">Python Versions</h3>
 					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-200">
+						<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
 							<thead>
 								<tr>
 									<th
@@ -527,23 +527,32 @@
 		{/await}
 	{/if}
 
-    <!-- API Links -->
-    <div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
-        <h3 class="mb-4 text-lg font-semibold text-gray-100">API Links</h3>
-        <div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
-            {#each apiEndpoints as ep}
-                <div class="flex items-center justify-between rounded-md border border-gray-800 bg-gray-950 px-3 py-2">
-                    <div class="min-w-0">
-                        <div class="text-gray-300">{ep.label}</div>
-                        <a class="truncate text-xs text-blue-400 hover:text-blue-300" href={endpointUrl(ep.path)} rel="noopener" target="_blank">{endpointUrl(ep.path)}</a>
-                    </div>
-                    <button
-                        class="ml-3 shrink-0 rounded-md border border-blue-700 bg-blue-800 px-2 py-1 text-xs text-white hover:bg-blue-700"
-                        onclick={() => navigator.clipboard?.writeText(endpointUrl(ep.path))}
-                        aria-label={`Copy ${ep.label} URL`}
-                    >Copy</button>
-                </div>
-            {/each}
-        </div>
-    </div>
+	<!-- API Links -->
+	<div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
+		<h3 class="mb-4 text-lg font-semibold text-gray-100">API Links</h3>
+		<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
+			{#each apiEndpoints as ep}
+				<div
+					class="flex items-center justify-between rounded-md border border-gray-800 bg-gray-950 px-3 py-2"
+				>
+					<div class="min-w-0">
+						<div class="text-gray-300">{ep.label}</div>
+						<a
+							class="truncate text-xs text-blue-400 hover:text-blue-300"
+							href={endpointUrl(ep.path)}
+							rel="noopener"
+							target="_blank">{endpointUrl(ep.path)}</a
+						>
+					</div>
+					<button
+						class="ml-3 shrink-0 rounded-md border border-blue-700 bg-blue-800 px-2 py-1 text-xs text-white hover:bg-blue-700"
+						onclick={() => navigator.clipboard?.writeText(endpointUrl(ep.path))}
+						aria-label={`Copy ${ep.label} URL`}
+					>
+						Copy
+					</button>
+				</div>
+			{/each}
+		</div>
+	</div>
 </div>

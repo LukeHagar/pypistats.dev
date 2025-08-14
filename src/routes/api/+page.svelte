@@ -20,6 +20,39 @@
         <h2 class="mt-8 mb-4 text-2xl font-semibold text-gray-100">Endpoints</h2>
 		
 		<div class="space-y-8">
+            <!-- Chart Data / Images -->
+            <div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
+                <h3 class="mb-3 text-xl font-semibold text-gray-100">Chart Data / Images</h3>
+                <div class="mb-4 rounded-md bg-gray-950 p-4">
+                    <code class="text-sm text-gray-200">GET /api/packages/&#123;package&#125;/chart/&#123;type&#125;</code>
+                </div>
+                <p class="mb-4 text-gray-400">
+                    Returns either a PNG chart image (default) or JSON payload for interactive charts.
+                </p>
+                <div class="mb-4">
+                    <strong class="text-gray-100">Path params:</strong>
+                    <ul class="mt-2 list-disc pl-6 text-gray-400">
+                        <li><code>type</code>: one of <code>overall</code>, <code>python_major</code>, <code>python_minor</code>, <code>system</code>, <code>installer</code>, <code>version</code></li>
+                    </ul>
+                </div>
+                <div class="mb-4">
+                    <strong class="text-gray-100">Query params:</strong>
+                    <ul class="mt-2 list-disc pl-6 text-gray-400">
+                        <li><code>format</code>: <code>json</code> to return the data model instead of an image</li>
+                        <li><code>chart</code>: <code>line</code> (default) or <code>bar</code></li>
+                        <li><code>mirrors</code>: for <code>overall</code>, include mirror downloads (<code>true</code>/<code>false</code>)</li>
+                        <li><code>version</code>: for <code>python_major</code>/<code>python_minor</code> filters</li>
+                        <li><code>os</code>: for <code>system</code> filter (e.g. <code>Linux</code>, <code>Windows</code>, <code>Darwin</code>)</li>
+                        <li><code>nocache</code> / <code>cache</code>: bypass caching (<code>nocache=1</code> or <code>cache=false</code>)</li>
+                    </ul>
+                </div>
+                <div class="mb-4">
+                    <strong class="text-gray-100">Example:</strong>
+                    <div class="mt-2 rounded-md bg-gray-950 p-4">
+                        <code class="text-sm text-gray-200">GET /api/packages/numpy/chart/overall?format=json&amp;chart=line&amp;mirrors=true</code>
+                    </div>
+                </div>
+            </div>
 			<!-- Recent Downloads -->
             <div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
                 <h3 class="mb-3 text-xl font-semibold text-gray-100">Recent Downloads</h3>
