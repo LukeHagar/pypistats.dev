@@ -1,3 +1,18 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+/* Global dark theme defaults */
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background-color: #0b0f19;
+  color: #e5e7eb;
+}
+
+/* Tailwind utility overrides for dark appearance */
+.prose {
+  @apply prose-invert;
+}

@@ -30,6 +30,21 @@
 		}
 	}
 
+	// API endpoints for quick links
+	const apiEndpoints = [
+		{ label: 'Recent downloads', path: 'recent' },
+		{ label: 'Overall downloads', path: 'overall' },
+		{ label: 'Python major versions', path: 'python_major' },
+		{ label: 'Python minor versions', path: 'python_minor' },
+		{ label: 'System downloads', path: 'system' },
+		{ label: 'Installer breakdown', path: 'installer' },
+		{ label: 'Summary totals', path: 'summary' }
+	];
+
+	function endpointUrl(path: string): string {
+		return `/api/packages/${encodeURIComponent(data.packageName)}/${path}`;
+	}
+
 	// Streaming handled with {#await} blocks below
 
 	// Build combined Python versions rows reactively
@@ -512,38 +527,23 @@
 		{/await}
 	{/if}
 
-	<!-- API Links -->
-	<div class="rounded-lg bg-blue-50 p-6">
-		<h3 class="mb-4 text-lg font-semibold text-gray-900">API Access</h3>
-		<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-			<div>
-				<strong>Recent downloads:</strong>
-				<a
-					href="/api/packages/{data.packageName}/recent"
-					class="ml-2 text-blue-600 hover:text-blue-800">JSON</a
-				>
-			</div>
-			<div>
-				<strong>Overall downloads:</strong>
-				<a
-					href="/api/packages/{data.packageName}/overall"
-					class="ml-2 text-blue-600 hover:text-blue-800">JSON</a
-				>
-			</div>
-			<div>
-				<strong>Python major versions:</strong>
-				<a
-					href="/api/packages/{data.packageName}/python_major"
-					class="ml-2 text-blue-600 hover:text-blue-800">JSON</a
-				>
-			</div>
-			<div>
-				<strong>System downloads:</strong>
-				<a
-					href="/api/packages/{data.packageName}/system"
-					class="ml-2 text-blue-600 hover:text-blue-800">JSON</a
-				>
-			</div>
-		</div>
-	</div>
+    <!-- API Links -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
+        <h3 class="mb-4 text-lg font-semibold text-gray-100">API Access</h3>
+        <div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
+            {#each apiEndpoints as ep}
+                <div class="flex items-center justify-between rounded-md border border-gray-800 bg-gray-950 px-3 py-2">
+                    <div class="min-w-0">
+                        <div class="text-gray-300">{ep.label}</div>
+                        <a class="truncate text-xs text-blue-400 hover:text-blue-300" href={endpointUrl(ep.path)} rel="noopener" target="_blank">{endpointUrl(ep.path)}</a>
+                    </div>
+                    <button
+                        class="ml-3 shrink-0 rounded-md border border-blue-700 bg-blue-800 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                        onclick={() => navigator.clipboard?.writeText(endpointUrl(ep.path))}
+                        aria-label={`Copy ${ep.label} URL`}
+                    >Copy</button>
+                </div>
+            {/each}
+        </div>
+    </div>
 </div>
