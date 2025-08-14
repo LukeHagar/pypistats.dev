@@ -21,28 +21,38 @@ CREATE TABLE "public"."overall" (
 CREATE TABLE "public"."python_major" (
     "date" DATE NOT NULL,
     "package" TEXT NOT NULL,
-    "category" TEXT,
+    "category" TEXT NOT NULL,
     "downloads" INTEGER NOT NULL,
 
-    CONSTRAINT "python_major_pkey" PRIMARY KEY ("date","package")
+    CONSTRAINT "python_major_pkey" PRIMARY KEY ("date","package","category")
 );
 
 -- CreateTable
 CREATE TABLE "public"."python_minor" (
     "date" DATE NOT NULL,
     "package" TEXT NOT NULL,
-    "category" TEXT,
+    "category" TEXT NOT NULL,
     "downloads" INTEGER NOT NULL,
 
-    CONSTRAINT "python_minor_pkey" PRIMARY KEY ("date","package")
+    CONSTRAINT "python_minor_pkey" PRIMARY KEY ("date","package","category")
 );
 
 -- CreateTable
 CREATE TABLE "public"."system" (
     "date" DATE NOT NULL,
     "package" TEXT NOT NULL,
-    "category" TEXT,
+    "category" TEXT NOT NULL,
     "downloads" INTEGER NOT NULL,
 
-    CONSTRAINT "system_pkey" PRIMARY KEY ("date","package")
+    CONSTRAINT "system_pkey" PRIMARY KEY ("date","package","category")
+);
+
+-- CreateTable
+CREATE TABLE "public"."installer" (
+    "date" DATE NOT NULL,
+    "package" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "downloads" INTEGER NOT NULL,
+
+    CONSTRAINT "installer_pkey" PRIMARY KEY ("date","package","category")
 );

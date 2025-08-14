@@ -153,8 +153,9 @@
 <div class="min-h-screen bg-gray-50 py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-      <p class="mt-2 text-gray-600">Manage data processing and cache operations</p>
+      <h1 class="text-3xl font-bold text-gray-900">Not Found</h1>
+      <p class="mt-2 text-gray-600">The admin dashboard has been removed.</p>
+      <p class="mt-4"><a href="/" class="text-blue-600 hover:text-blue-800">Return to homepage</a></p>
     </div>
 
     {#if error}

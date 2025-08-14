@@ -1,12 +1,9 @@
-FROM node:20-slim
+FROM node:latest
 
 # Install deps needed by Prisma and shell
 RUN apt-get update && apt-get install -y openssl bash && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Allow skipping app build in devcontainer
-ARG SKIP_APP_BUILD=0
 
 # Copy package manifests first for better cache
 COPY package.json pnpm-lock.yaml* ./
@@ -21,17 +18,15 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generate Prisma client and build SvelteKit (Node adapter)
-RUN pnpm prisma generate
-RUN if [ "$SKIP_APP_BUILD" != "1" ]; then pnpm build; fi
+RUN pnpm prisma generate && pnpm prisma migrate deploy
+
+RUN pnpm build
 
 ENV NODE_ENV=production
 
-# Entrypoint handles migrations and start
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 EXPOSE 3000
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Default command can be overridden by compose
+CMD ["node", "build/index.js"]
 
 

@@ -313,6 +313,7 @@ export class DataProcessor {
       WITH dls AS (
         SELECT
           file.project AS package,
+          file.version AS file_version,
           details.installer.name AS installer,
           details.python AS python_version,
           details.system.name AS system
@@ -370,6 +371,17 @@ export class DataProcessor {
           WHEN system NOT IN (${SYSTEMS.map(s => `'${s}'`).join(', ')}) THEN 'other'
           ELSE system
         END, 'other') AS category,
+        COUNT(*) AS downloads
+      FROM dls
+      WHERE installer NOT IN (${MIRRORS.map(m => `'${m}'`).join(', ')})
+      GROUP BY package, category
+
+      UNION ALL
+
+      SELECT
+        package,
+        'version' AS category_label,
+        COALESCE(file_version, 'unknown') AS category,
         COUNT(*) AS downloads
       FROM dls
       WHERE installer NOT IN (${MIRRORS.map(m => `'${m}'`).join(', ')})
@@ -446,6 +458,7 @@ export class DataProcessor {
         SELECT
           DATE(timestamp) AS date,
           file.project AS package,
+          file.version AS file_version,
           details.installer.name AS installer,
           details.python AS python_version,
           details.system.name AS system
@@ -518,6 +531,17 @@ export class DataProcessor {
         COUNT(*) AS downloads
       FROM dls
       GROUP BY date, package, category
+
+      UNION ALL
+
+      SELECT
+        date,
+        package,
+        'version' AS category_label,
+        COALESCE(file_version, 'unknown') AS category,
+        COUNT(*) AS downloads
+      FROM dls
+      GROUP BY date, package, category
     `;
   }
 
@@ -550,15 +574,68 @@ export class DataProcessor {
           where: { date: dateObj }
         });
         break;
+      case 'version':
+        if ((tx as any).versionDownloadCount) {
+          await (tx as any).versionDownloadCount.deleteMany({ where: { date: dateObj } });
+        }
+        break;
     }
   }
 
   private async insertRecords(table: string, records: any[], tx: Prisma.TransactionClient): Promise<void> {
+    const normalizeDate = (value: any): Date => {
+      if (value instanceof Date) return value;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          const d = new Date(`${trimmed}T00:00:00Z`);
+          if (!isNaN(d.getTime())) return d;
+        }
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) return d;
+      }
+      if (value && typeof value === 'object') {
+        // BigQuery DATE often arrives as { value: 'YYYY-MM-DD' }
+        if (typeof (value as any).value === 'string') {
+          return normalizeDate((value as any).value);
+        }
+        // Some drivers return { year, month, day }
+        const maybeY = (value as any).year;
+        const maybeM = (value as any).month;
+        const maybeD = (value as any).day;
+        if (
+          typeof maybeY === 'number' &&
+          typeof maybeM === 'number' &&
+          typeof maybeD === 'number'
+        ) {
+          const mm = String(maybeM).padStart(2, '0');
+          const dd = String(maybeD).padStart(2, '0');
+          return normalizeDate(`${maybeY}-${mm}-${dd}`);
+        }
+        // Timestamp-like with toDate()
+        if (typeof (value as any).toDate === 'function') {
+          const d = (value as any).toDate();
+          if (d instanceof Date && !isNaN(d.getTime())) return d;
+        }
+        // Timestamp-like with seconds/nanos
+        if (
+          typeof (value as any).seconds === 'number' ||
+          typeof (value as any).nanos === 'number'
+        ) {
+          const seconds = Number((value as any).seconds || 0);
+          const nanos = Number((value as any).nanos || 0);
+          const d = new Date(seconds * 1000 + Math.floor(nanos / 1e6));
+          if (!isNaN(d.getTime())) return d;
+        }
+      }
+      throw new Error(`Invalid date value: ${value}`);
+    };
+
     switch (table) {
       case 'overall':
         await tx.overallDownloadCount.createMany({
           data: records.map(r => ({
-            date: new Date(r.date),
+            date: normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -568,7 +645,7 @@ export class DataProcessor {
       case 'python_major':
         await tx.pythonMajorDownloadCount.createMany({
           data: records.map(r => ({
-            date: new Date(r.date),
+            date: normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -578,7 +655,7 @@ export class DataProcessor {
       case 'python_minor':
         await tx.pythonMinorDownloadCount.createMany({
           data: records.map(r => ({
-            date: new Date(r.date),
+            date: normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -588,7 +665,7 @@ export class DataProcessor {
       case 'system':
         await tx.systemDownloadCount.createMany({
           data: records.map(r => ({
-            date: new Date(r.date),
+            date: normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'other',
             downloads: r.downloads
@@ -598,12 +675,24 @@ export class DataProcessor {
       case 'installer':
         await (tx as any).installerDownloadCount.createMany({
           data: records.map(r => ({
-            date: new Date(r.date),
+            date: normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
           }))
         });
+        break;
+      case 'version':
+        if ((tx as any).versionDownloadCount) {
+          await (tx as any).versionDownloadCount.createMany({
+            data: records.map(r => ({
+              date: normalizeDate(r.date),
+              package: r.package,
+              category: r.category ?? 'unknown',
+              downloads: r.downloads
+            }))
+          });
+        }
         break;
     }
   }
@@ -735,6 +824,11 @@ export class DataProcessor {
           where: { date: { lt: purgeDate } }
         });
         return systemResult.count;
+      case 'version':
+        const versionResult = await (prisma as any).versionDownloadCount.deleteMany({
+          where: { date: { lt: purgeDate } }
+        });
+        return versionResult.count;
       default:
         return 0;
     }

@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
     import type { PageData } from './$types';
     const { data } = $props<{ data: PageData }>();
-    let searchTerm = $state('');
+    let searchTerm = $state(data.searchTerm ?? '');
 </script>
 
 <svelte:head>
@@ -14,7 +13,7 @@
 		<h1 class="text-3xl font-bold text-gray-900 mb-8">Search Packages</h1>
 		
 		<!-- Search Form -->
-		<form method="GET" action="/search" use:enhance class="mb-8">
+        <form method="GET" action="/search" class="mb-8">
 			<div class="flex gap-2">
 				<input
 					type="text"
@@ -43,7 +42,7 @@
 				<div class="divide-y divide-gray-200">
 					{#each data.packages as pkg}
 						<div class="px-6 py-4 hover:bg-gray-50">
-							<a href="/packages/{pkg}" class="block">
+							<a href="/packages/{pkg}" class="block" data-sveltekit-preload-data="off">
 								<div class="text-lg font-medium text-blue-600 hover:text-blue-800">
 									{pkg}
 								</div>

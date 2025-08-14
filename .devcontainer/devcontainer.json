@@ -1,33 +1,18 @@
 {
-  "name": "pypistats.dev",
-  "dockerComposeFile": [
-    "../docker-compose.yml",
-    "../docker-compose.dev.yml"
-  ],
-  "service": "web",
-  "workspaceFolder": "/app",
-  "build": {
-    "args": {
-      "SKIP_APP_BUILD": "1"
-    }
+  "name": "Vite Dev + Postgres + Redis",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash"
   },
-  "runArgs": ["--env-file", ".env"],
-  "forwardPorts": [5173, 3000, 5555],
-  "portsAttributes": {
-    "5173": { "label": "Vite Dev Server" },
-    "3000": { "label": "Node Adapter Server" },
-    "5555": { "label": "Prisma Studio" }
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "esbenp.prettier-vscode",
-        "Prisma.prisma",
-        "svelte.svelte-vscode",
-        "dbaeumer.vscode-eslint"
-      ]
-    }
-  }
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm install && pnpm prisma generate && pnpm prisma migrate deploy && (pnpm rebuild canvas || true) && pnpm dev",
+  "remoteUser": "root",
+  "forwardPorts": [5173, 5432, 6379],
+  "extensions": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
 }
 
 

@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   db:
-    image: postgres:16
+    image: postgres:latest
     environment:
       POSTGRES_DB: pypistats
       POSTGRES_USER: pypistats
@@ -12,13 +10,13 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   redis:
-    image: redis:7
+    image: redis:latest
     ports:
       - "6379:6379"
     healthcheck:
@@ -45,7 +43,7 @@ services:
       # GOOGLE_APPLICATION_CREDENTIALS_JSON: '{"type":"service_account",...}'
     ports:
       - "3000:3000"
-    command: ["/entrypoint.sh"]
+    command: ["node", "build/index.js"]
 
 volumes:
   pgdata:

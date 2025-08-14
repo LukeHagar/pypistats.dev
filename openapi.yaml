@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: PyPI Stats API
+  version: 1.0.0
+  description: |
+    API for querying download statistics for Python packages from PyPI (via BigQuery replication).
+    Endpoints return JSON or rendered charts. Caching and on-demand freshness are applied.
+servers:
+  - url: https://{host}
+    variables:
+      host:
+        default: localhost:5173
+paths:
+  /api/packages/{package}/recent:
+    get:
+      summary: Recent downloads summary (day, week, month)
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+          description: Package name (dots/underscores normalized to hyphens)
+        - in: query
+          name: period
+          schema: { type: string, enum: [day, week, month] }
+          description: Optional; if omitted returns all three periods
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [recent_downloads] }
+                  data:
+                    type: object
+                    example:
+                      last_day: 123
+                      last_week: 456
+                      last_month: 789
+        '404': { description: Package not found }
+
+  /api/packages/{package}/overall:
+    get:
+      summary: Overall downloads time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+        - in: query
+          name: mirrors
+          schema: { type: string, enum: ['true', 'false'] }
+          description: Include mirror downloads; omit for both categories
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [overall_downloads] }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        category: { type: string, enum: [with_mirrors, without_mirrors] }
+                        downloads: { type: integer }
+        '404': { description: Package not found }
+
+  /api/packages/{package}/python_major:
+    get:
+      summary: Python major version downloads time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+        - in: query
+          name: version
+          schema: { type: string }
+          description: Optional filter (e.g., '3')
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [python_major_downloads] }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        category: { type: string }
+                        downloads: { type: integer }
+
+  /api/packages/{package}/python_minor:
+    get:
+      summary: Python minor version downloads time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+        - in: query
+          name: version
+          schema: { type: string }
+          description: Optional filter (e.g., '3.11')
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [python_minor_downloads] }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        category: { type: string }
+                        downloads: { type: integer }
+
+  /api/packages/{package}/system:
+    get:
+      summary: System OS downloads time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+        - in: query
+          name: os
+          schema: { type: string, enum: [Windows, Linux, Darwin, other] }
+          description: Optional filter
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [system_downloads] }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        category: { type: string }
+                        downloads: { type: integer }
+
+  /api/packages/{package}/installer:
+    get:
+      summary: Installer downloads time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [installer_downloads] }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        category: { type: string }
+                        downloads: { type: integer }
+
+  /api/packages/{package}/summary:
+    get:
+      summary: At-a-glance totals for a package
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package: { type: string }
+                  type: { type: string, enum: [summary] }
+                  totals:
+                    type: object
+                    properties:
+                      overall: { type: integer }
+                      system:
+                        type: object
+                        additionalProperties: { type: integer }
+                      python_major:
+                        type: object
+                        additionalProperties: { type: integer }
+                      python_minor:
+                        type: object
+                        additionalProperties: { type: integer }
+
+  /api/packages/{package}/chart/{type}:
+    get:
+      summary: Render a Chart.js image of time series
+      parameters:
+        - in: path
+          name: package
+          required: true
+          schema: { type: string }
+        - in: path
+          name: type
+          required: true
+          schema: { type: string, enum: [overall, python_major, python_minor, system] }
+        - in: query
+          name: chart
+          schema: { type: string, enum: [line, bar] }
+          description: Chart type to render
+        - in: query
+          name: mirrors
+          schema: { type: string, enum: ['true', 'false'] }
+          description: Only for type=overall
+        - in: query
+          name: version
+          schema: { type: string }
+          description: Only for type=python_major/python_minor (e.g., 3 or 3.11)
+        - in: query
+          name: os
+          schema: { type: string, enum: [Windows, Linux, Darwin, other] }
+          description: Only for type=system
+      responses:
+        '200':
+          description: PNG image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400': { description: Bad request }
+        '404': { description: Package not found }
+
+components:
+  securitySchemes: {}
+

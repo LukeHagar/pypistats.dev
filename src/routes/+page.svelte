@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
 
 	const { data } = $props<{ data: PageData }>();
@@ -22,8 +21,8 @@
 		</p>
 		
 		<!-- Search Form -->
-		<div class="max-w-md mx-auto">
-			<form method="POST" action="/search" use:enhance class="flex gap-2">
+        <div class="max-w-md mx-auto">
+            <form method="GET" action="/search" class="flex gap-2">
 				<input
 					type="text"
 					name="q"
@@ -41,20 +40,29 @@
 			</form>
 		</div>
 		
-		{#await data.packageCount then packageCount}
-			<div class="mt-8 text-sm text-gray-500">
-				Tracking {packageCount?.toLocaleString()} packages
-			</div>
-		{/await}
+        <div class="mt-8 text-sm text-gray-500">
+            Tracking {data.packageCount ? data.packageCount.toLocaleString() : 'tons of'} packages
+        </div>
 	</div>
 	
 	<!-- Quick Links -->
 	<div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<h3 class="text-lg font-semibold text-gray-900 mb-2">Popular Packages</h3>
-			<p class="text-gray-600 mb-4">Check download stats for popular Python packages</p>
-			<a href="/search/numpy" class="text-blue-600 hover:text-blue-800 font-medium">View Examples →</a>
-		</div>
+			<div class="bg-white p-6 rounded-lg shadow-sm border">
+				<h3 class="text-lg font-semibold text-gray-900 mb-2">Popular Packages (last 30 days)</h3>
+				<p class="text-gray-600 mb-4">Top projects by downloads (without mirrors)</p>
+				{#if data.popular && data.popular.length > 0}
+					<ul class="divide-y divide-gray-200">
+						{#each data.popular as row}
+							<li class="py-2 flex items-center justify-between">
+								<a class="text-blue-600 hover:text-blue-800 font-medium" href="/packages/{row.package}" data-sveltekit-preload-data="off">{row.package}</a>
+								<span class="text-sm text-gray-500">{row.downloads.toLocaleString()}</span>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<div class="text-sm text-gray-500">No data yet.</div>
+				{/if}
+			</div>
 		
 		<div class="bg-white p-6 rounded-lg shadow-sm border">
 			<h3 class="text-lg font-semibold text-gray-900 mb-2">API Access</h3>

@@ -1,8 +1,21 @@
 import { prisma } from './prisma.js';
 import { RECENT_CATEGORIES } from './database.js';
 import { CacheManager } from './redis.js';
+import { DataProcessor } from './data-processor.js';
 
 const cache = new CacheManager();
+let processor: DataProcessor | null = null;
+function getProcessor() {
+  if (!processor) processor = new DataProcessor();
+  return processor;
+}
+async function ensurePackageFreshnessFor(packageName: string) {
+  try {
+    await getProcessor().ensurePackageFreshness(packageName);
+  } catch (error) {
+    console.error('Failed to ensure package freshness:', packageName, error);
+  }
+}
 
 export type Results = {
   date: string;
@@ -13,11 +26,10 @@ export type Results = {
 export async function getRecentDownloads(packageName: string, category?: string): Promise<Results[]> {
   const cacheKey = CacheManager.getRecentStatsKey(packageName);
   
-  // Try to get from cache first
-  const cached = await cache.get<Results[]>(cacheKey);
-  if (cached && !category) {
-    return cached;
-  } 
+  // Ensure DB has fresh data for this package before computing recent
+  if (!category) {
+    await ensurePackageFreshnessFor(packageName);
+  }
 
   if (category && RECENT_CATEGORIES.includes(category)) {
     // Compute recent from overall without mirrors
@@ -44,8 +56,12 @@ export async function getRecentDownloads(packageName: string, category?: string)
   const month: Results[] = await getRecentDownloads(packageName, 'month');
   const result: Results[] = [...day, ...week, ...month];
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, result, 3600);
+  // Cache only if non-empty; otherwise clear any stale empty cache
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
   
   return result;
 }
@@ -66,11 +82,8 @@ function getRecentBounds(category: string) {
 export async function getOverallDownloads(packageName: string, mirrors?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `overall_${mirrors || 'all'}`);
   
-  // Try to get from cache first
-  const cached = await cache.get<Results[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  // Always ensure DB freshness first to avoid returning stale cache
+  await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
@@ -89,8 +102,12 @@ export async function getOverallDownloads(packageName: string, mirrors?: string)
     }
   });
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, result, 3600);
+  // Cache only if non-empty; otherwise clear any stale empty cache
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
   
   return result;
 }
@@ -98,11 +115,8 @@ export async function getOverallDownloads(packageName: string, mirrors?: string)
 export async function getPythonMajorDownloads(packageName: string, version?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `python_major_${version || 'all'}`);
   
-  // Try to get from cache first
-  const cached = await cache.get<Results[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  // Ensure DB freshness first
+  await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
@@ -119,8 +133,11 @@ export async function getPythonMajorDownloads(packageName: string, version?: str
     }
   });
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, result, 3600);
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
   
   return result;
 }
@@ -128,11 +145,8 @@ export async function getPythonMajorDownloads(packageName: string, version?: str
 export async function getPythonMinorDownloads(packageName: string, version?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `python_minor_${version || 'all'}`);
   
-  // Try to get from cache first
-  const cached = await cache.get<Results[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  // Ensure DB freshness first
+  await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
@@ -149,8 +163,11 @@ export async function getPythonMinorDownloads(packageName: string, version?: str
     }
   });
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, result, 3600);
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
   
   return result;
 }
@@ -158,11 +175,8 @@ export async function getPythonMinorDownloads(packageName: string, version?: str
 export async function getSystemDownloads(packageName: string, os?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `system_${os || 'all'}`);
   
-  // Try to get from cache first
-  const cached = await cache.get<Results[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  // Ensure DB freshness first
+  await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
@@ -179,68 +193,242 @@ export async function getSystemDownloads(packageName: string, os?: string) {
     }
   });
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, result, 3600);
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
   
   return result;
 }
 
+export async function getInstallerDownloads(packageName: string, installer?: string) {
+  const cacheKey = CacheManager.getPackageKey(packageName, `installer_${installer || 'all'}`);
+  // Ensure DB freshness first
+  await ensurePackageFreshnessFor(packageName);
+  const whereClause: any = { package: packageName };
+  if (installer) whereClause.category = installer;
+  const result = await (prisma as any).installerDownloadCount.findMany({
+    where: whereClause,
+    orderBy: { date: 'asc' }
+  });
+  if (result.length > 0) {
+    await cache.set(cacheKey, result, 3600);
+  } else {
+    await cache.del(cacheKey);
+  }
+  return result as Array<{ date: Date; package: string; category: string; downloads: number }>;
+}
+
+export async function getVersionDownloads(packageName: string, version?: string) {
+  const cacheKey = CacheManager.getPackageKey(packageName, `version_${version || 'all'}`);
+  // Ensure DB freshness first
+  await ensurePackageFreshnessFor(packageName);
+  const whereClause: any = { package: packageName };
+  if (version) whereClause.category = version;
+  try {
+    const model = (prisma as any).versionDownloadCount;
+    if (!model) return [] as Array<{ date: Date; package: string; category: string; downloads: number }>;
+    const result = await model.findMany({
+      where: whereClause,
+      orderBy: { date: 'asc' }
+    });
+    if (result.length > 0) {
+      await cache.set(cacheKey, result, 3600);
+    } else {
+      await cache.del(cacheKey);
+    }
+    return result as Array<{ date: Date; package: string; category: string; downloads: number }>;
+  } catch (error) {
+    console.error('getVersionDownloads failed:', error);
+    return [] as Array<{ date: Date; package: string; category: string; downloads: number }>;
+  }
+}
+
 export async function searchPackages(searchTerm: string) {
-  const cacheKey = CacheManager.getSearchKey(searchTerm);
-  
+  const query = (searchTerm || '').trim();
+  if (!query) return [] as string[];
+
+  const cacheKey = CacheManager.getSearchKey(query);
+
   // Try to get from cache first
   const cached = await cache.get<string[]>(cacheKey);
   if (cached) {
     return cached;
   }
 
-  const results = await prisma.recentDownloadCount.findMany({
-    where: {
-      package: {
-        startsWith: searchTerm
-      },
-      category: 'month'
-    },
-    select: {
-      package: true
-    },
-    distinct: ['package'],
-    orderBy: {
-      package: 'asc'
-    },
-    take: 20
-  });
-  
-  const packages = results.map(result => result.package);
+  // Use PyPI Simple API (PEP 691 JSON) to fetch the package index, cache it,
+  // then do a local prefix filter for suggestions.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  const indexKey = CacheManager.getSearchKey('__simple_index__');
+  try {
+    // Try index from cache first
+    let allPackages = await cache.get<string[]>(indexKey);
 
-  // Cache the result for 30 minutes (search results change less frequently)
-  await cache.set(cacheKey, packages, 1800);
-  
-  return packages;
+    if (!allPackages) {
+      const indexResponse = await fetch('https://pypi.org/simple/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/vnd.pypi.simple.v1+json',
+          'User-Agent': 'pypistats.app (server-side)'
+        },
+        signal: controller.signal
+      });
+
+      if (!indexResponse.ok) {
+        console.error('PyPI Simple index error:', indexResponse.status, indexResponse.statusText);
+      } else {
+        const indexJson = (await indexResponse.json()) as { projects?: Array<{ name: string; url: string }>; };
+        allPackages = (indexJson.projects || []).map((p) => p.name);
+        if (allPackages.length > 0) {
+          // Cache the full index for 6 hours
+          await cache.set(indexKey, allPackages, 6 * 60 * 60);
+        }
+      }
+    }
+
+    const q = query.toLowerCase();
+    let matches: string[] = [];
+    if (Array.isArray(allPackages) && allPackages.length > 0) {
+      matches = allPackages
+        .filter((name) => name.toLowerCase().startsWith(q))
+        .slice(0, 20);
+    }
+
+    // Fallback: if no matches from the index, try exact project existence via JSON API
+    if (matches.length === 0) {
+      const projectResponse = await fetch(`https://pypi.org/pypi/${encodeURIComponent(query)}/json`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'pypistats.app (server-side)'
+        },
+        signal: controller.signal
+      });
+      if (projectResponse.ok) {
+        matches = [query];
+      }
+    }
+
+    // Cache per-query matches for 30 minutes
+    await cache.set(cacheKey, matches, 1800);
+    return matches;
+  } catch (error) {
+    if ((error as any)?.name === 'AbortError') {
+      console.error('PyPI Simple API request timed out');
+    } else {
+      console.error('PyPI Simple/API request failed:', error);
+    }
+    return [] as string[];
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function getPackageCount() {
-  const cacheKey = CacheManager.getPackageCountKey();
-  
-  // Try to get from cache first
-  const cached = await cache.get<number>(cacheKey);
-  if (cached !== null) {
-    return cached;
-  }
+  try {
+    // First try recent monthly snapshot as authoritative
+    const recent = await prisma.recentDownloadCount.findMany({
+      where: { category: 'month' },
+      distinct: ['package'],
+      select: { package: true }
+    });
 
-  const result = await prisma.recentDownloadCount.groupBy({
+    const distinct = new Set<string>(recent.map((r) => r.package));
+
+    const count = distinct.size;
+
+    return count;
+  } catch (error) {
+    console.error('getPackageCount failed:', error);
+    return undefined
+  }
+}
+
+export async function getPopularPackages(limit = 10, days = 30): Promise<Array<{ package: string; downloads: number }>> {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // Prefer 'without_mirrors' as the canonical signal
+  const grouped = await prisma.overallDownloadCount.groupBy({
     by: ['package'],
     where: {
-      category: 'month'
-    }
+      category: 'without_mirrors',
+      date: { gte: cutoff }
+    },
+    _sum: { downloads: true },
+    orderBy: { _sum: { downloads: 'desc' } },
+    take: limit
   });
-  
-  const count = result.length;
+  return grouped.map((g) => ({ package: g.package, downloads: Number(g._sum.downloads || 0) }));
+}
 
-  // Cache the result for 1 hour
-  await cache.set(cacheKey, count, 3600);
-  
-  return count;
+export type PackageMetadata = {
+  name: string;
+  version: string | null;
+  summary: string | null;
+  homePage: string | null;
+  projectUrls: Record<string, string> | null;
+  pypiUrl: string;
+  latestReleaseDate: string | null;
+};
+
+export async function getPackageMetadata(packageName: string): Promise<PackageMetadata> {
+  const url = `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`;
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'pypistats.app (server-side)'
+      }
+    });
+    if (!res.ok) {
+      return {
+        name: packageName,
+        version: null,
+        summary: null,
+        homePage: null,
+        projectUrls: null,
+        pypiUrl: `https://pypi.org/project/${packageName}/`,
+        latestReleaseDate: null
+      };
+    }
+    const json = await res.json();
+    const info = json?.info || {};
+    const version = info?.version ?? null;
+    // Determine latest upload time for the current version
+    let latestReleaseDate: string | null = null;
+    try {
+      const releases = json?.releases || {};
+      const files = Array.isArray(releases?.[version]) ? releases[version] : [];
+      const latest = files.reduce((max: string | null, f: any) => {
+        const t = f?.upload_time_iso_8601 || f?.upload_time || null;
+        if (!t) return max;
+        return !max || new Date(t).getTime() > new Date(max).getTime() ? t : max;
+      }, null as string | null);
+      latestReleaseDate = latest ? new Date(latest).toISOString().split('T')[0] : null;
+    } catch {}
+    return {
+      name: packageName,
+      version,
+      summary: info?.summary ?? null,
+      homePage: info?.home_page ?? null,
+      projectUrls: (info?.project_urls as Record<string, string> | undefined) ?? null,
+      pypiUrl: `https://pypi.org/project/${packageName}/`,
+      latestReleaseDate
+    };
+  } catch (error) {
+    console.error('getPackageMetadata error:', error);
+    return {
+      name: packageName,
+      version: null,
+      summary: null,
+      homePage: null,
+      projectUrls: null,
+      pypiUrl: `https://pypi.org/project/${packageName}/`,
+      latestReleaseDate: null
+    };
+  }
 }
 
 // Cache invalidation functions

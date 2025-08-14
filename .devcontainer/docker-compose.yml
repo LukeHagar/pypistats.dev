@@ -1,0 +1,47 @@
+version: "3.8"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    ports:
+      - "5173:5173"
+    environment:
+      # Use service DNS names within the devcontainer network
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres?schema=public
+      REDIS_URL: redis://redis:6379
+    networks:
+      - devnet
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - devnet
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - devnet
+
+networks:
+  devnet:
+
+
