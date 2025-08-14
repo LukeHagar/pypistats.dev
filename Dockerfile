@@ -5,6 +5,10 @@ RUN apt-get update && apt-get install -y openssl bash && rm -rf /var/lib/apt/lis
 
 WORKDIR /app
 
+# Provide DATABASE_URL during build via build-arg
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 # Copy package manifests first for better cache
 COPY package.json pnpm-lock.yaml* ./
 
