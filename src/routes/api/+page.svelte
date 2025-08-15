@@ -30,7 +30,7 @@
         <!-- Scalar API Reference iframe -->
         <div class="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
             <iframe
-                src="https://cdn.jsdelivr.net/npm/@scalar/api-reference/dist/index.html?url=https://pypistats.dev/openapi.yaml"
+                src="/api-docs.html"
                 class="w-full h-[800px] border-0"
                 title="PyPI Stats API Documentation"
                 loading="lazy"
