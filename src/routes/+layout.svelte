@@ -18,6 +18,9 @@
 						<a href="/" class="border-transparent text-gray-300 hover:border-gray-600 hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
 							Home
 						</a>
+						<a href="/search" class="border-transparent text-gray-300 hover:border-gray-600 hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+							Search
+						</a>
 						<a href="/about" class="border-transparent text-gray-300 hover:border-gray-600 hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
 							About
 						</a>

@@ -25,7 +25,7 @@ export type Results = {
 
 export async function getRecentDownloads(packageName: string, category?: string): Promise<Results[]> {
   const cacheKey = CacheManager.getRecentStatsKey(packageName);
-  
+
   // Ensure DB has fresh data for this package before computing recent
   if (!category) {
     await ensurePackageFreshnessFor(packageName);
@@ -49,7 +49,7 @@ export async function getRecentDownloads(packageName: string, category?: string)
       downloads: r._sum.downloads || 0
     }));
   }
-  
+
   // Default: return day/week/month computed on the fly
   const day: Results[] = await getRecentDownloads(packageName, 'day');
   const week: Results[] = await getRecentDownloads(packageName, 'week');
@@ -62,7 +62,7 @@ export async function getRecentDownloads(packageName: string, category?: string)
   } else {
     await cache.del(cacheKey);
   }
-  
+
   return result;
 }
 
@@ -84,20 +84,20 @@ function getRecentBounds(category: string) {
 
 export async function getOverallDownloads(packageName: string, mirrors?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `overall_${mirrors || 'all'}`);
-  
+
   // Always ensure DB freshness first to avoid returning stale cache
   await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
   };
-  
+
   if (mirrors === 'true') {
     whereClause.category = 'with_mirrors';
   } else if (mirrors === 'false') {
     whereClause.category = 'without_mirrors';
   }
-  
+
   const result = await prisma.overallDownloadCount.findMany({
     where: whereClause,
     orderBy: {
@@ -111,24 +111,24 @@ export async function getOverallDownloads(packageName: string, mirrors?: string)
   } else {
     await cache.del(cacheKey);
   }
-  
+
   return result;
 }
 
 export async function getPythonMajorDownloads(packageName: string, version?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `python_major_${version || 'all'}`);
-  
+
   // Ensure DB freshness first
   await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
   };
-  
+
   if (version) {
     whereClause.category = version;
   }
-  
+
   const result = await prisma.pythonMajorDownloadCount.findMany({
     where: whereClause,
     orderBy: {
@@ -141,24 +141,24 @@ export async function getPythonMajorDownloads(packageName: string, version?: str
   } else {
     await cache.del(cacheKey);
   }
-  
+
   return result;
 }
 
 export async function getPythonMinorDownloads(packageName: string, version?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `python_minor_${version || 'all'}`);
-  
+
   // Ensure DB freshness first
   await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
   };
-  
+
   if (version) {
     whereClause.category = version;
   }
-  
+
   const result = await prisma.pythonMinorDownloadCount.findMany({
     where: whereClause,
     orderBy: {
@@ -171,24 +171,24 @@ export async function getPythonMinorDownloads(packageName: string, version?: str
   } else {
     await cache.del(cacheKey);
   }
-  
+
   return result;
 }
 
 export async function getSystemDownloads(packageName: string, os?: string) {
   const cacheKey = CacheManager.getPackageKey(packageName, `system_${os || 'all'}`);
-  
+
   // Ensure DB freshness first
   await ensurePackageFreshnessFor(packageName);
 
   const whereClause: any = {
     package: packageName
   };
-  
+
   if (os) {
     whereClause.category = os;
   }
-  
+
   const result = await prisma.systemDownloadCount.findMany({
     where: whereClause,
     orderBy: {
@@ -201,7 +201,7 @@ export async function getSystemDownloads(packageName: string, os?: string) {
   } else {
     await cache.del(cacheKey);
   }
-  
+
   return result;
 }
 
@@ -330,23 +330,18 @@ export async function searchPackages(searchTerm: string) {
 }
 
 export async function getPackageCount() {
-  try {
-    // First try recent monthly snapshot as authoritative
-    const recent = await prisma.recentDownloadCount.findMany({
-      where: { category: 'month' },
-      distinct: ['package'],
-      select: { package: true }
-    });
+  // First try recent monthly snapshot as authoritative
+  const recent = await prisma.recentDownloadCount.findMany({
+    where: { category: 'month' },
+    distinct: ['package'],
+    select: { package: true }
+  });
 
-    const distinct = new Set<string>(recent.map((r) => r.package));
+  const distinct = new Set<string>(recent.map((r) => r.package));
 
-    const count = distinct.size;
+  const count = distinct.size;
 
-    return count;
-  } catch (error) {
-    console.error('getPackageCount failed:', error);
-    return undefined
-  }
+  return count;
 }
 
 export async function getPopularPackages(limit = 10, days = 30): Promise<Array<{ package: string; downloads: number }>> {
@@ -410,7 +405,7 @@ export async function getPackageMetadata(packageName: string): Promise<PackageMe
         return !max || new Date(t).getTime() > new Date(max).getTime() ? t : max;
       }, null as string | null);
       latestReleaseDate = latest ? new Date(latest).toISOString().split('T')[0] : null;
-    } catch {}
+    } catch { }
     return {
       name: packageName,
       version,
@@ -445,7 +440,7 @@ export async function invalidatePackageCache(packageName: string) {
     CacheManager.getPackageKey(packageName, 'python_minor_all'),
     CacheManager.getPackageKey(packageName, 'system_all'),
   ];
-  
+
   for (const pattern of patterns) {
     await cache.del(pattern);
   }

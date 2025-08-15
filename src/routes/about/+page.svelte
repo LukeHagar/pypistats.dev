@@ -1,7 +1,12 @@
-<svelte:head>
-	<title>About - PyPI Stats</title>
-	<meta name="description" content="Learn about PyPI Stats and how it works" />
-</svelte:head>
+<script lang="ts">
+	import { MetaTags } from 'svelte-meta-tags';
+</script>
+
+<MetaTags
+	title="About PyPI Stats - Download Statistics for Python Packages"
+	description="Learn about PyPI Stats, how we collect download data from PyPI, and what statistics we provide for Python packages."
+	keywords={["PyPI Stats", "about", "data collection", "Python package statistics", "PyPI downloads", "BigQuery"]}
+/>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <h1 class="mb-8 text-3xl font-bold text-gray-100">About PyPI Stats</h1>

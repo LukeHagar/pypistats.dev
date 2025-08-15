@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { onMount, onDestroy } from 'svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import { MetaTags } from 'svelte-meta-tags';
 	const { data }: { data: PageData } = $props();
 
 	let overallCanvas: HTMLCanvasElement | null = $state(null);
@@ -156,10 +157,11 @@
 	});
 </script>
 
-<svelte:head>
-	<title>{data.packageName} - PyPI Stats</title>
-	<meta name="description" content="Download statistics for {data.packageName} package" />
-</svelte:head>
+<MetaTags
+	title="Python Package Download Statistics - PyPI Stats"
+	description="View comprehensive download statistics for Python packages from PyPI. Track package popularity, Python version usage, system breakdowns, and download trends."
+	keywords={["Python package statistics", "PyPI downloads", "package analytics", "download trends", "Python version usage", "system breakdown"]}
+/>
 
 <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 	<div class="mb-8">

@@ -1,7 +1,12 @@
-<svelte:head>
-	<title>FAQs - PyPI Stats</title>
-	<meta name="description" content="Frequently asked questions about PyPI Stats" />
-</svelte:head>
+<script lang="ts">
+	import { MetaTags } from 'svelte-meta-tags';
+</script>
+
+<MetaTags
+	title="Frequently Asked Questions - PyPI Stats"
+	description="Find answers to common questions about PyPI Stats, data accuracy, API usage, and how we collect Python package download statistics."
+	keywords={["PyPI Stats FAQ", "frequently asked questions", "Python package statistics", "API usage", "data accuracy", "download statistics"]}
+/>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <h1 class="mb-8 text-3xl font-bold text-gray-100">Frequently Asked Questions</h1>

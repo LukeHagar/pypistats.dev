@@ -1,16 +1,18 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import { MetaTags } from 'svelte-meta-tags';
 
-	const { data } = $props<{ data: PageData }>();
+	const { data }: { data: PageData } = $props();
 	
 	let searchTerm = $state('');
 </script>
 
-<svelte:head>
-	<title>PyPI Stats - Download statistics for Python packages</title>
-	<meta name="description" content="Get download statistics for Python packages from PyPI" />
-</svelte:head>
+<MetaTags
+	title="PyPI Stats - Download Statistics for Python Packages"
+	description="Get comprehensive download statistics for Python packages from PyPI. Track package popularity, Python version usage, system breakdowns, and more with our free API."
+	keywords={["PyPI", "Python packages", "download statistics", "package analytics", "Python package stats", "PyPI downloads"]}
+/>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="text-center">
