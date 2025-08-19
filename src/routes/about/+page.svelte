@@ -40,44 +40,60 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
                 <h3 class="text-lg font-semibold text-gray-100 mb-3">Frontend</h3>
-                <ul class="space-y-2 text-gray-400">
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                        <strong>SvelteKit</strong> - Modern web framework for reactive UI
+                <ul class="space-y-3 text-gray-400">
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>SvelteKit</strong> - Modern web framework for reactive UI
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                        <strong>TypeScript</strong> - Type-safe JavaScript development
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>TypeScript</strong> - Type-safe JavaScript development
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                        <strong>Tailwind CSS</strong> - Utility-first CSS framework
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>Tailwind CSS</strong> - Utility-first CSS framework
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                        <strong>Chart.js</strong> - Interactive data visualization
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>Chart.js</strong> - Interactive data visualization
+                        </div>
                     </li>
                 </ul>
             </div>
             
             <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
                 <h3 class="text-lg font-semibold text-gray-100 mb-3">Backend & Data</h3>
-                <ul class="space-y-2 text-gray-400">
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                        <strong>PostgreSQL</strong> - Primary database for statistics
+                <ul class="space-y-3 text-gray-400">
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>PostgreSQL</strong> - Primary database for statistics
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                        <strong>Redis</strong> - Caching and distributed locks
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>Redis</strong> - Caching and distributed locks
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                        <strong>BigQuery</strong> - Google's data warehouse for PyPI logs
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>BigQuery</strong> - Google's data warehouse for PyPI logs
+                        </div>
                     </li>
-                    <li class="flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                        <strong>Prisma</strong> - Type-safe database ORM
+                    <li class="flex">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                        <div class="flex-1">
+                            <strong>Prisma</strong> - Type-safe database ORM
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -85,22 +101,30 @@
         
         <div class="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-6">
             <h3 class="text-lg font-semibold text-gray-100 mb-3">Infrastructure & Deployment</h3>
-            <ul class="space-y-2 text-gray-400">
-                <li class="flex items-center">
-                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-                    <strong>Docker Compose</strong> - Containerized deployment stack
+            <ul class="space-y-3 text-gray-400">
+                <li class="flex">
+                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                    <div class="flex-1">
+                        <strong>Docker Compose</strong> - Containerized deployment stack
+                    </div>
                 </li>
-                <li class="flex items-center">
-                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-                    <strong>pnpm</strong> - Fast, disk space efficient package manager
+                <li class="flex">
+                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                    <div class="flex-1">
+                        <strong>pnpm</strong> - Fast, disk space efficient package manager
+                    </div>
                 </li>
-                <li class="flex items-center">
-                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-                    <strong>OpenAPI</strong> - Standardized API documentation
+                <li class="flex">
+                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                    <div class="flex-1">
+                        <strong>OpenAPI</strong> - Standardized API documentation
+                    </div>
                 </li>
-                <li class="flex items-center">
-                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-                    <strong>Scalar</strong> - Interactive API documentation interface
+                <li class="flex">
+                    <span class="w-2 h-2 bg-purple-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                    <div class="flex-1">
+                        <strong>Scalar</strong> - Interactive API documentation interface
+                    </div>
                 </li>
             </ul>
         </div>
