@@ -330,18 +330,20 @@ export async function searchPackages(searchTerm: string) {
 }
 
 export async function getPackageCount() {
-  // First try recent monthly snapshot as authoritative
-  const recent = await prisma.recentDownloadCount.findMany({
-    where: { category: 'month' },
-    distinct: ['package'],
-    select: { package: true }
-  });
+  try {
+    // Count distinct packages from overall downloads table (most reliable)
+    const overall = await prisma.overallDownloadCount.groupBy({
+      by: ['package'],
+      where: {
+        category: 'without_mirrors' // Use without_mirrors as canonical source
+      }
+    });
 
-  const distinct = new Set<string>(recent.map((r) => r.package));
-
-  const count = distinct.size;
-
-  return count;
+    return overall.length;
+  } catch (error) {
+    console.error('Error getting package count:', error);
+    return 0;
+  }
 }
 
 export async function getPopularPackages(limit = 10, days = 30): Promise<Array<{ package: string; downloads: number }>> {
