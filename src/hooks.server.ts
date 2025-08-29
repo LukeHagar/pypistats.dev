@@ -32,7 +32,7 @@ if (typeof process !== 'undefined') {
 
 // Sliding window rate limit parameters
 const WINDOW_SECONDS = 60; // 1 minute
-const MAX_REQUESTS = 300; // per id per window
+const MAX_REQUESTS = 15; // per ip per window
 
 async function consumeSlidingWindow(key: string, points: number, windowSeconds: number) {
   const client = getRedisClient();
