@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getOverallDownloads } from '$lib/api.js';
+import { trackApiEvent } from '$lib/analytics.js';
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, request }) => {
     const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
     const mirrors = url.searchParams.get('mirrors');
     
@@ -27,9 +28,19 @@ export const GET: RequestHandler = async ({ params, url }) => {
             }))
         };
         
+        trackApiEvent('api_overall', `/api/packages/${encodeURIComponent(packageName)}/overall`, {
+            package: packageName,
+            mirrors: String(mirrors ?? ''),
+            ok: true
+        }, request.headers);
         return json(response);
     } catch (error) {
         console.error('Error fetching overall downloads:', error);
+        trackApiEvent('api_overall', `/api/packages/${encodeURIComponent(packageName)}/overall`, {
+            package: packageName,
+            mirrors: String(mirrors ?? ''),
+            ok: false
+        }, request.headers);
         return json({ error: 'Internal server error' }, { status: 500 });
     }
 }; 

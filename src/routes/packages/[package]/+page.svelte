@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { onMount, onDestroy } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { PLAUSIBLE_DOMAIN, PLAUSIBLE_EVENT_ENDPOINT, PLAUSIBLE_CAPTURE_LOCALHOST } from '$lib/plausible-config.js';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { MetaTags } from 'svelte-meta-tags';
 	const { data }: { data: PageData } = $props();
@@ -11,6 +13,37 @@
 	let systemCanvas: HTMLCanvasElement | null = $state(null);
 	let charts: any[] = [];
 	let installerCanvas: HTMLCanvasElement | null = $state(null);
+
+	// Plausible: track package views
+	let lastTrackedPackage: string = '';
+	let plausibleInitDone: boolean = false;
+	let plausibleTrack: ((name: string, options?: any) => void) | null = null;
+
+	async function ensurePlausible() {
+		if (plausibleInitDone && plausibleTrack) return;
+		if (typeof window === 'undefined') return;
+		const mod = await import('@plausible-analytics/tracker');
+		const domain = PLAUSIBLE_DOMAIN || window.location.hostname;
+		const endpoint = PLAUSIBLE_EVENT_ENDPOINT || undefined;
+		mod.init({
+			domain,
+			endpoint,
+			captureOnLocalhost: PLAUSIBLE_CAPTURE_LOCALHOST,
+			logging: false,
+			bindToWindow: false
+		});
+		plausibleTrack = mod.track;
+		plausibleInitDone = true;
+	}
+
+	async function trackPackageView(pkg: string) {
+		if (!pkg || lastTrackedPackage === pkg) return;
+		if (typeof window === 'undefined') return;
+		await ensurePlausible();
+		if (!plausibleTrack) return;
+		plausibleTrack('package_view', { props: { package: pkg } });
+		lastTrackedPackage = pkg;
+	}
 
 	const numberFormatter = new Intl.NumberFormat(undefined);
 	const compactFormatter = new Intl.NumberFormat(undefined, {
@@ -138,6 +171,9 @@
 	}
 
 	onMount(() => {
+		// Track initial view
+		if (data?.packageName) trackPackageView(data.packageName);
+
 		loadAndRenderChart(overallCanvas, 'overall');
 		requestAnimationFrame(() => {
 			loadAndRenderChart(pyMajorCanvas, 'python_major');
@@ -145,6 +181,19 @@
 			loadAndRenderChart(systemCanvas, 'system');
 			loadAndRenderChart(installerCanvas, 'installer');
 		});
+	});
+
+	afterNavigate((nav) => {
+		let url: URL;
+		const maybe = (nav as any);
+		if (maybe && maybe.to && maybe.to.url instanceof URL) {
+			url = maybe.to.url as URL;
+		} else {
+			url = new URL(window.location.href);
+		}
+		const match = url.pathname.match(/^\/packages\/([^\/]+)/);
+		const pkg = match?.[1] ? decodeURIComponent(match[1]) : '';
+		if (pkg) void trackPackageView(pkg);
 	});
 
 	onDestroy(() => {
@@ -241,14 +290,14 @@
 						href={meta.pypiUrl}
 						rel="noopener"
 						target="_blank">View on PyPI</a
-					>
+						>
 					{#if meta.homePage}
 						<a
 							class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
 							href={meta.homePage}
 							rel="noopener"
 							target="_blank">Homepage</a
-						>
+							>
 					{/if}
 					{#if meta.projectUrls}
 						{#each Object.entries(meta.projectUrls).filter(([label, url]) => !['homepage'].includes(label.toLowerCase())) as [label, url]}
@@ -258,7 +307,7 @@
 									href={url}
 									rel="noopener"
 									target="_blank">{label}</a
-								>
+									>
 							{/if}
 						{/each}
 					{/if}
@@ -284,11 +333,11 @@
 										<th
 											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Period</th
-										>
+											>
 										<th
 											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
-										>
+											>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
@@ -322,11 +371,11 @@
 										<th
 											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Category</th
-										>
+											>
 										<th
 											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
-										>
+											>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
@@ -362,11 +411,11 @@
 										<th
 											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>System</th
-										>
+											>
 										<th
 											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 											>Downloads</th
-										>
+											>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800 bg-gray-950">
@@ -402,11 +451,11 @@
 									<th
 										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
 										>Version</th
-									>
+										>
 									<th
 										class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
 										>Downloads</th
-									>
+										>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-gray-800 bg-gray-950">
@@ -424,7 +473,7 @@
 											</td>
 											<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
 												>{formatNumber(row.downloads)}</td
-											>
+												>
 										</tr>
 									{/each}
 								{:catch _}
@@ -545,7 +594,7 @@
 							href={endpointUrl(ep.path)}
 							rel="noopener"
 							target="_blank">{endpointUrl(ep.path)}</a
-						>
+							>
 					</div>
 					<button
 						class="ml-3 shrink-0 rounded-md border border-blue-700 bg-blue-800 px-2 py-1 text-xs text-white hover:bg-blue-700"

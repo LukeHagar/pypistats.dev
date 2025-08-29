@@ -4,6 +4,7 @@ import { getRecentDownloads } from '$lib/api.js';
 import { RECENT_CATEGORIES } from '$lib/database.js';
 import { RateLimiter } from '$lib/redis.js';
 import { DataProcessor } from '$lib/data-processor.js';
+import { trackApiEvent } from '$lib/analytics.js';
 
 const rateLimiter = new RateLimiter();
 
@@ -62,9 +63,19 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
             'X-RateLimit-Reset': (Math.floor(Date.now() / 1000) + 3600).toString()
         };
         
+        trackApiEvent('api_recent', `/api/packages/${encodeURIComponent(packageName)}/recent`, {
+            package: packageName,
+            period: String(category ?? ''),
+            ok: true
+        }, request.headers);
         return json(response, { headers });
     } catch (error) {
         console.error('Error fetching recent downloads:', error);
+        trackApiEvent('api_recent', `/api/packages/${encodeURIComponent(packageName)}/recent`, {
+            package: packageName,
+            period: String(category ?? ''),
+            ok: false
+        }, request.headers);
         return json({ error: 'Internal server error' }, { status: 500 });
     }
 }; 

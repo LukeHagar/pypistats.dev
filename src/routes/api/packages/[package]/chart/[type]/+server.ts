@@ -3,13 +3,14 @@ import { dev } from '$app/environment';
 import { CacheManager } from '$lib/redis.js';
 import { getOverallDownloads, getPythonMajorDownloads, getPythonMinorDownloads, getSystemDownloads, getInstallerDownloads, getVersionDownloads } from '$lib/api.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import { trackApiEvent } from '$lib/analytics.js';
 
 const cache = new CacheManager();
 
 const width = 1200;
 const height = 600;
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, request }) => {
   const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
   const type = params.type || 'overall';
   const chartType = (url.searchParams.get('chart') || 'line').toLowerCase(); // 'line' | 'bar'
@@ -102,6 +103,13 @@ export const GET: RequestHandler = async ({ params, url }) => {
         labels,
         datasets
       };
+      trackApiEvent('api_chart', `/api/packages/${encodeURIComponent(packageName)}/chart/${type}`, {
+        package: packageName,
+        type,
+        chart: chartType,
+        format: 'json',
+        ok: true
+      }, request.headers);
       return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
     }
 
@@ -140,9 +148,22 @@ export const GET: RequestHandler = async ({ params, url }) => {
       await cache.set(cacheKey, image.toString('base64'), 3600);
     }
 
+    trackApiEvent('api_chart', `/api/packages/${encodeURIComponent(packageName)}/chart/${type}`, {
+      package: packageName,
+      type,
+      chart: chartType,
+      format: 'png',
+      ok: true
+    }, request.headers);
     return new Response(image, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' } });
   } catch (error) {
     console.error('Error rendering chart:', error);
+    trackApiEvent('api_chart', `/api/packages/${encodeURIComponent(packageName)}/chart/${type}`, {
+      package: packageName,
+      type,
+      chart: chartType,
+      ok: false
+    }, request.headers);
     return new Response('Internal server error', { status: 500 });
   }
 };

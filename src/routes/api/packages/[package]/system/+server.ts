@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getSystemDownloads } from '$lib/api.js';
+import { trackApiEvent } from '$lib/analytics.js';
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, request }) => {
     const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
     const os = url.searchParams.get('os');
     
@@ -26,10 +27,19 @@ export const GET: RequestHandler = async ({ params, url }) => {
                 downloads: r.downloads
             }))
         };
-        
+        trackApiEvent('api_system', `/api/packages/${encodeURIComponent(packageName)}/system`, {
+            package: packageName,
+            os: String(os ?? ''),
+            ok: true
+        }, request.headers);
         return json(response);
     } catch (error) {
         console.error('Error fetching system downloads:', error);
+        trackApiEvent('api_system', `/api/packages/${encodeURIComponent(packageName)}/system`, {
+            package: packageName,
+            os: String(os ?? ''),
+            ok: false
+        }, request.headers);
         return json({ error: 'Internal server error' }, { status: 500 });
     }
 }; 
