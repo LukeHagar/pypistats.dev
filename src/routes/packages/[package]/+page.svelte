@@ -77,7 +77,7 @@
 	];
 
 	function endpointUrl(path: string): string {
-		return `/api/packages/${encodeURIComponent(data.packageName)}/${path}`;
+		return `https://pypistats.dev/api/packages/${encodeURIComponent(data.packageName)}/${path}`;
 	}
 
 	// Streaming handled with {#await} blocks below
