@@ -1,0 +1,43 @@
+{
+  "name": "pypistats",
+  "version": "1.0.0",
+  "description": "PyPIStats.dev - Fast, on-demand Python package download analytics",
+  "main": "build/index.js",
+  "scripts": {
+    "start": "node build/index.js",
+    "build": "pnpm run db:generate && pnpm run build",
+    "postinstall": "pnpm run db:generate"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "railpack": {
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm run build",
+    "startCommand": "pnpm run db:migrate && pnpm start",
+    "port": 3000,
+    "healthCheck": {
+      "path": "/",
+      "interval": 30,
+      "timeout": 10
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "PORT": "3000"
+    },
+    "dependencies": {
+      "postgresql": {
+        "version": "15",
+        "extensions": []
+      },
+      "redis": {
+        "version": "7"
+      }
+    },
+    "buildArgs": {
+      "DATABASE_URL": "required"
+    },
+    "volumes": [],
+    "networks": []
+  }
+}

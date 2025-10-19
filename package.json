@@ -15,7 +15,9 @@
 		"db:studio": "prisma studio",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
-		"db:deploy": "prisma migrate deploy"
+		"db:deploy": "prisma migrate deploy",
+		"railpack:build": "pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build",
+		"railpack:start": "pnpm run db:deploy && pnpm start"
 	},
 	"dependencies": {
 		"@google-cloud/bigquery": "^8.1.1",
