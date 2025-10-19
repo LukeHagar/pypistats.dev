@@ -155,7 +155,7 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
       format: 'png',
       ok: true
     }, request.headers);
-    return new Response(image, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' } });
+    return new Response(image as any, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' } });
   } catch (error) {
     console.error('Error rendering chart:', error);
     trackApiEvent('api_chart', `/api/packages/${encodeURIComponent(packageName)}/chart/${type}`, {
