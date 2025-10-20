@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pypistats -d pypistats"]
+      test: [ "CMD-SHELL", "pg_isready -U pypistats -d pypistats" ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -19,11 +19,11 @@ services:
     image: redis:latest
     environment:
       SERVICE_PASSWORD_REDIS: ${SERVICE_PASSWORD_REDIS}
-    command: ["redis-server", "--requirepass", "${SERVICE_PASSWORD_REDIS}"]
+    command: [ "redis-server", "--requirepass", "${SERVICE_PASSWORD_REDIS}" ]
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping"]
+      test: [ "CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping" ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -50,7 +50,7 @@ services:
       SERVICE_FQDN_WEB_3000: "" # Coolify will generate the public URL
     ports:
       - "3000:3000"
-    command: ["sh", "-c", "pnpm prisma migrate deploy && node build/index.js"]
+    command: [ "sh", "-c", "bun run prisma migrate deploy && bun run build/index.js" ]
 
 volumes:
   pgdata:

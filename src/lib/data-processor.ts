@@ -2,6 +2,7 @@ import { prisma } from './prisma.js';
 import type { Prisma } from '@prisma/client';
 import { BigQuery } from '@google-cloud/bigquery';
 import { CacheManager, LockManager } from './redis.js';
+import { env } from '$env/dynamic/private';
 
 // Configuration constants
 const MIRRORS = ['bandersnatch', 'z3c.pypimirror', 'Artifactory', 'devpi'];
@@ -30,70 +31,24 @@ export class DataProcessor {
   private locks: LockManager;
 
   constructor() {
-    // Initialize BigQuery client with flexible credential handling
-    const bigQueryConfig: any = {
-      projectId: process.env.GOOGLE_PROJECT_ID,
-    };
-
     // Handle credentials from environment variable or file
-    const rawCredentialsEnv = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-    if (rawCredentialsEnv) {
-      // Add diagnostics without leaking secrets
-      const trimmed = rawCredentialsEnv.trim();
-      const firstChar = trimmed[0];
-      const looksLikeJson = firstChar === '{' || firstChar === '[';
-      const looksLikeBase64 = !looksLikeJson && /^[A-Za-z0-9+/=\n\r]+$/.test(trimmed);
-      console.log(
-        'BigQuery credentials detected in GOOGLE_APPLICATION_CREDENTIALS_JSON',
-        `length=${trimmed.length}`,
-        `startsWith=${firstChar}`,
-        `jsonLikely=${looksLikeJson}`,
-        `base64Likely=${looksLikeBase64}`
-      );
-
-      try {
-        let parsed: any | null = null;
-        if (looksLikeJson) {
-          parsed = JSON.parse(trimmed);
-        } else {
-          // Try base64 decode → JSON parse
-          try {
-            const decoded = Buffer.from(trimmed, 'base64').toString('utf8');
-            console.log('BigQuery credentials decoded from base64', `decodedLength=${decoded.length}`);
-            parsed = JSON.parse(decoded);
-          } catch (e) {
-            console.error('BigQuery credentials base64 decode/parse failed');
-            throw e;
-          }
-        }
-
-        if (parsed && typeof parsed.private_key === 'string') {
-          parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
-        }
-        bigQueryConfig.credentials = parsed;
-      } catch (error) {
-        console.error(
-          'Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON. '
-            + 'Ensure it is valid JSON or base64-encoded JSON with escaped newlines in private_key.'
-        );
-        // Fallback: if a key file path is provided, use it; otherwise, surface a clearer error
-        if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-          console.warn('Falling back to GOOGLE_APPLICATION_CREDENTIALS keyFilename');
-          bigQueryConfig.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-        } else {
-          throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON format');
-        }
-      }
-    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      // Use file path (existing behavior)
-      bigQueryConfig.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    } else {
-      // Try to use default credentials (for local development with gcloud auth)
-      console.log('No explicit credentials provided, using default credentials');
+    const base64Credentials = env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
+    if (!base64Credentials) {
+      throw new Error('GOOGLE_APPLICATION_CREDENTIALS_BASE64 is not set');
     }
 
+    const decoded = Buffer.from(base64Credentials, 'base64').toString('utf8');
+
+    const credentials = JSON.parse(decoded);
+
+    // Initialize BigQuery client with flexible credential handling
+    const bigQueryConfig = {
+      projectId: credentials.project_id,
+      credentials: credentials,
+    };
+
     this.bigquery = new BigQuery(bigQueryConfig);
-    
+
     // Initialize cache and locks
     this.cache = new CacheManager();
     this.locks = new LockManager();
@@ -104,14 +59,14 @@ export class DataProcessor {
    */
   async etl(date?: string, purge: boolean = true) {
     const targetDate = date || this.getYesterdayDate();
-    
+
     console.log(`Starting ETL process for date: ${targetDate}`);
     const etlLockKey = `pypistats:lock:etl:${targetDate}`;
     const processedKey = `pypistats:processed:${targetDate}`;
     let lockToken: string | null = null;
-    
+
     const results: any = {};
-    
+
     try {
       // If we've already processed this date, skip idempotently
       const alreadyProcessed = await this.cache.get<boolean>(processedKey);
@@ -129,25 +84,25 @@ export class DataProcessor {
 
       // Get daily download stats
       results.downloads = await this.getDailyDownloadStats(targetDate);
-      
+
       // Update __all__ package stats
       results.__all__ = await this.updateAllPackageStats(targetDate);
-      
+
       // Update recent stats
       results.recent = await this.updateRecentStats();
-      
+
       // Database maintenance
       results.cleanup = await this.vacuumAnalyze();
-      
+
       // Purge old data
       if (purge) {
         results.purge = await this.purgeOldData(targetDate);
       }
-      
+
       // Mark processed and clear cache
       await this.cache.set(processedKey, true, 60 * 60 * 24 * 14); // remember for 14 days
       await this.clearCache();
-      
+
       console.log('ETL process completed successfully');
       return results;
     } catch (error) {
@@ -159,7 +114,7 @@ export class DataProcessor {
         if (lockToken) {
           await this.locks.releaseLock(etlLockKey, lockToken);
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -168,12 +123,12 @@ export class DataProcessor {
    */
   async getDailyDownloadStats(date: string): Promise<any> {
     console.log(`Fetching download stats for ${date} from BigQuery...`);
-    
+
     const query = this.getBigQueryQuery(date);
     const [rows] = await this.bigquery.query({ query });
-    
+
     console.log(`Retrieved ${rows.length} rows from BigQuery`);
-    
+
     // Process data by category
     const data: ProcessedData = {};
     for (const row of rows as DownloadRecord[]) {
@@ -187,7 +142,7 @@ export class DataProcessor {
         downloads: row.downloads,
       });
     }
-    
+
     // Update database with new data
     return await this.updateDatabase(data, date);
   }
@@ -197,24 +152,24 @@ export class DataProcessor {
    */
   async updateDatabase(data: ProcessedData, date: string): Promise<any> {
     const results: any = {};
-    
+
     for (const [category, rows] of Object.entries(data)) {
       console.log(`Updating ${category} table with ${rows.length} records`);
-      
+
       try {
         // Wrap as a transaction to ensure idempotency and avoid partial writes
         await prisma.$transaction(async (tx) => {
           await this.deleteExistingRecords(category, date, tx);
           await this.insertRecords(category, rows, tx);
         });
-        
+
         results[category] = true;
       } catch (error) {
         console.error(`Error updating ${category} table:`, error);
         results[category] = false;
       }
     }
-    
+
     return results;
   }
 
@@ -223,28 +178,28 @@ export class DataProcessor {
    */
   async updateAllPackageStats(date: string): Promise<any> {
     console.log('Updating __all__ package stats');
-    
+
     const tables = ['overall', 'python_major', 'python_minor', 'system'];
     const results: any = {};
-    
+
     for (const table of tables) {
       try {
         // Get aggregated data for __all__
         const aggregatedData = await this.getAggregatedData(table, date);
-        
+
         // Delete existing __all__ records
         await this.deleteAllPackageRecords(table, date);
-        
+
         // Insert aggregated records
         await this.insertAllPackageRecords(table, aggregatedData);
-        
+
         results[table] = true;
       } catch (error) {
         console.error(`Error updating __all__ for ${table}:`, error);
         results[table] = false;
       }
     }
-    
+
     return results;
   }
 
@@ -253,31 +208,31 @@ export class DataProcessor {
    */
   async updateRecentStats(): Promise<any> {
     console.log('Updating recent stats');
-    
+
     const periods = ['day', 'week', 'month'];
     const results: any = {};
-    
+
     for (const period of periods) {
       try {
         const recentData = await this.getRecentData(period);
-        
+
         // Delete existing records for this period
         await prisma.recentDownloadCount.deleteMany({
           where: { category: period }
         });
-        
+
         // Insert new records
         await prisma.recentDownloadCount.createMany({
           data: recentData
         });
-        
+
         results[period] = true;
       } catch (error) {
         console.error(`Error updating recent stats for ${period}:`, error);
         results[period] = false;
       }
     }
-    
+
     return results;
   }
 
@@ -286,13 +241,13 @@ export class DataProcessor {
    */
   async purgeOldData(date: string): Promise<any> {
     console.log('Purging old data');
-    
+
     const purgeDate = new Date();
     purgeDate.setDate(purgeDate.getDate() - MAX_RECORD_AGE);
-    
+
     const tables = ['overall', 'python_major', 'python_minor', 'system'];
     const results: any = {};
-    
+
     for (const table of tables) {
       try {
         const deletedCount = await this.deleteOldRecords(table, purgeDate);
@@ -302,7 +257,7 @@ export class DataProcessor {
         results[table] = false;
       }
     }
-    
+
     return results;
   }
 
@@ -311,9 +266,9 @@ export class DataProcessor {
    */
   async vacuumAnalyze(): Promise<any> {
     console.log('Running database maintenance');
-    
+
     const results: any = {};
-    
+
     try {
       // Note: Prisma doesn't support VACUUM/ANALYZE directly
       // These would need to be run via raw SQL if needed
@@ -322,7 +277,7 @@ export class DataProcessor {
     } catch (error) {
       console.error('Error during database maintenance:', error);
     }
-    
+
     return results;
   }
 
@@ -585,7 +540,7 @@ export class DataProcessor {
 
   private async deleteExistingRecords(table: string, date: string, tx: Prisma.TransactionClient): Promise<void> {
     const dateObj = new Date(date);
-    
+
     switch (table) {
       case 'overall':
         await tx.overallDownloadCount.deleteMany({
@@ -737,7 +692,7 @@ export class DataProcessor {
 
   private async getAggregatedData(table: string, date: string) {
     const dateObj = new Date(date);
-    
+
     switch (table) {
       case 'overall':
         return await prisma.overallDownloadCount.groupBy({
@@ -770,7 +725,7 @@ export class DataProcessor {
 
   private async deleteAllPackageRecords(table: string, date: string): Promise<void> {
     const dateObj = new Date(date);
-    
+
     switch (table) {
       case 'overall':
         await prisma.overallDownloadCount.deleteMany({
@@ -802,14 +757,14 @@ export class DataProcessor {
       category: data.category ?? (table === 'system' ? 'other' : 'unknown'),
       downloads: data._sum.downloads || 0
     }));
-    
+
     await this.insertRecords(table, records, prisma);
   }
 
   private async getRecentData(period: string): Promise<any[]> {
     const today = new Date();
     let startDate: Date;
-    
+
     switch (period) {
       case 'day':
         startDate = new Date(today);
@@ -823,7 +778,7 @@ export class DataProcessor {
       default:
         throw new Error(`Invalid period: ${period}`);
     }
-    
+
     const results = await prisma.overallDownloadCount.groupBy({
       by: ['package'],
       where: {
@@ -832,7 +787,7 @@ export class DataProcessor {
       },
       _sum: { downloads: true }
     });
-    
+
     return results.map(result => ({
       package: result.package,
       category: period,
