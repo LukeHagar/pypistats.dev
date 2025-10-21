@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: pypistats
       POSTGRES_USER: pypistats
-      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -18,12 +18,12 @@ services:
   redis:
     image: redis:latest
     environment:
-      SERVICE_PASSWORD_REDIS: ${SERVICE_PASSWORD_REDIS}
-    command: [ "redis-server", "--requirepass", "${SERVICE_PASSWORD_REDIS}" ]
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD}" ]
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping" ]
+      test: [ "CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping" ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -32,7 +32,7 @@ services:
     build:
       context: .
       args:
-        DATABASE_URL: postgresql://pypistats:${SERVICE_PASSWORD_POSTGRES}@db:5432/pypistats?schema=public
+        DATABASE_URL: postgresql://pypistats:${POSTGRES_PASSWORD}@db:5432/pypistats?schema=public
     depends_on:
       db:
         condition: service_healthy
@@ -41,13 +41,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      SERVICE_PASSWORD_POSTGRES: ${SERVICE_PASSWORD_POSTGRES}
-      SERVICE_PASSWORD_REDIS: ${SERVICE_PASSWORD_REDIS}
-      DATABASE_URL: postgresql://pypistats:${SERVICE_PASSWORD_POSTGRES}@db:5432/pypistats?schema=public
-      REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
-      GOOGLE_PROJECT_ID: ${SERVICE_GOOGLE_PROJECT_ID}
-      GOOGLE_APPLICATION_CREDENTIALS_JSON: ${SERVICE_GOOGLE_CREDENTIALS}
-      SERVICE_FQDN_WEB_3000: "" # Coolify will generate the public URL
+      SERVICE_PASSWORD_POSTGRES: ${POSTGRES_PASSWORD}
+      SERVICE_PASSWORD_REDIS: ${REDIS_PASSWORD}
+      DATABASE_URL: postgresql://pypistats:${POSTGRES_PASSWORD}@db:5432/pypistats?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     ports:
       - "3000:3000"
     command: [ "sh", "-c", "bun run prisma migrate deploy && bun run build/index.js" ]
