@@ -28,6 +28,8 @@ RUN bun run build
 
 ENV NODE_ENV=production
 
+EXPOSE 3000
+
 # Default command can be overridden by compose
 CMD ["bun", "run", "build/index.js"]
 
