@@ -45,7 +45,7 @@ services:
       DATABASE_URL: postgresql://pypistats:${POSTGRES_PASSWORD}@db:5432/pypistats?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     expose:
-      - 2567
+      - 3000
     networks:
       - dokploy-network
     command: [ "sh", "-c", "bun run prisma migrate deploy && bun run build/index.js" ]
