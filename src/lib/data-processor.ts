@@ -101,7 +101,6 @@ export class DataProcessor {
 
       // Mark processed and clear cache
       await this.cache.set(processedKey, true, 60 * 60 * 24 * 14); // remember for 14 days
-      await this.clearCache();
 
       console.log('ETL process completed successfully');
       return results;
@@ -279,19 +278,6 @@ export class DataProcessor {
     }
 
     return results;
-  }
-
-  /**
-   * Clear all cache after data update
-   */
-  private async clearCache(): Promise<void> {
-    console.log('Clearing cache after data update');
-    try {
-      await this.cache.flush();
-      console.log('Cache cleared successfully');
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-    }
   }
 
   // Helper methods

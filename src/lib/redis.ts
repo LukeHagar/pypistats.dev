@@ -1,39 +1,28 @@
-import { env } from '$env/dynamic/private';
-import { createClient } from 'redis';
+import { RedisClient } from 'bun';
 
 // Redis client instance
-let redisClient: ReturnType<typeof createClient> | null = null;
+let redisClient: RedisClient | null = null;
 let isConnecting = false;
 let isDisconnecting = false;
 
 export function getRedisClient() {
-  const redisUrl = env.REDIS_URL;
-
   if (!redisClient && !isConnecting) {
     isConnecting = true;
-    redisClient = createClient({
-      url: redisUrl,
-    });
+    redisClient = new RedisClient();
 
-    redisClient.on('error', (err: any) => {
-      console.error('Redis Client Error:', err);
-    });
+ 
 
-    redisClient.on('connect', () => {
+    redisClient.onconnect = () => {
       console.log('Redis Client Connected');
       isConnecting = false;
-    });
+    }
 
-    redisClient.on('disconnect', () => {
-      console.log('Redis Client Disconnected');
-    });
-
-    redisClient.on('end', () => {
-      console.log('Redis Client Connection Ended');
+    redisClient.onclose = (error: any) => {
+      console.log('Redis Client Connection Ended', error);
       redisClient = null;
       isConnecting = false;
       isDisconnecting = false;
-    });
+    }
 
     redisClient.connect().catch((error) => {
       console.error('Redis Client Connection Failed:', error);
@@ -51,7 +40,7 @@ export async function closeRedisClient(): Promise<void> {
     isDisconnecting = true;
     try {
       console.log('Closing Redis client connection...');
-      await redisClient.quit();
+      redisClient.close();
       console.log('Redis client connection closed successfully');
     } catch (error) {
       console.error('Error closing Redis client:', error);
@@ -70,7 +59,7 @@ export async function forceDisconnectRedis(): Promise<void> {
     isDisconnecting = true;
     try {
       console.log('Force disconnecting Redis client...');
-      await redisClient.destroy();
+      redisClient.close();
       console.log('Redis client force disconnected');
     } catch (error) {
       console.error('Error force disconnecting Redis client:', error);
@@ -108,7 +97,7 @@ export class CacheManager {
         console.warn('Redis client not available for set operation');
         return;
       }
-      await client.setEx(key, ttl, JSON.stringify(value));
+      await client.setex(key, ttl, JSON.stringify(value));
     } catch (error) {
       console.error('Redis set error:', error);
     }
@@ -135,23 +124,10 @@ export class CacheManager {
         return false;
       }
       const result = await client.exists(key);
-      return result === 1;
+      return result
     } catch (error) {
       console.error('Redis exists error:', error);
       return false;
-    }
-  }
-
-  async flush(): Promise<void> {
-    try {
-      const client = this.client;
-      if (!client) {
-        console.warn('Redis client not available for flush operation');
-        return;
-      }
-      await client.flushDb();
-    } catch (error) {
-      console.error('Redis flush error:', error);
     }
   }
 
@@ -190,7 +166,7 @@ export class LockManager {
         return null;
       }
       const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const result = await client.set(key, token, { NX: true, EX: ttlSeconds });
+      const result = await client.setex(key, ttlSeconds, token);
       return result === 'OK' ? token : null;
     } catch (error) {
       console.error('Redis acquireLock error:', error);
@@ -216,11 +192,8 @@ export class LockManager {
           return 0
         end
       `;
-      const res = (await client.eval(lua, {
-        keys: [key],
-        arguments: [token]
-      })) as number;
-      return res === 1;
+      const res = await client.send(lua, [key, token]);
+      return res
     } catch (error) {
       console.error('Redis releaseLock error:', error);
       return false;
@@ -292,7 +265,7 @@ export class SessionManager {
         console.warn('Redis client not available for set session');
         return;
       }
-      await client.setEx(sessionId, this.defaultTTL, JSON.stringify(data));
+      await client.setex(sessionId, this.defaultTTL, JSON.stringify(data));
     } catch (error) {
       console.error('Set session error:', error);
     }
@@ -335,7 +308,7 @@ export class SessionManager {
       }
       const data = await client.get(sessionId);
       if (data) {
-        await client.setEx(sessionId, this.defaultTTL, data);
+        await client.setex(sessionId, this.defaultTTL, data);
       }
     } catch (error) {
       console.error('Refresh session error:', error);
