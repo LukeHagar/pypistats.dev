@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { createClient } from 'redis';
 
 // Redis client instance
@@ -6,14 +7,7 @@ let isConnecting = false;
 let isDisconnecting = false;
 
 export function getRedisClient() {
-  const redisUrl = process.env.REDIS_URL;
-  // Skip connecting if no REDIS_URL is provided (e.g., during build)
-  if (!redisUrl) {
-    if (typeof process !== 'undefined') {
-      console.warn('Redis disabled: REDIS_URL not set');
-    }
-    return null;
-  }
+  const redisUrl = env.REDIS_URL;
 
   if (!redisClient && !isConnecting) {
     isConnecting = true;
@@ -21,7 +15,7 @@ export function getRedisClient() {
       url: redisUrl,
     });
 
-    redisClient.on('error', (err) => {
+    redisClient.on('error', (err: any) => {
       console.error('Redis Client Error:', err);
     });
 
@@ -76,7 +70,7 @@ export async function forceDisconnectRedis(): Promise<void> {
     isDisconnecting = true;
     try {
       console.log('Force disconnecting Redis client...');
-      await redisClient.disconnect();
+      await redisClient.destroy();
       console.log('Redis client force disconnected');
     } catch (error) {
       console.error('Error force disconnecting Redis client:', error);
