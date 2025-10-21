@@ -453,7 +453,3 @@ export async function invalidateSearchCache() {
   // For now, we'll just clear the package count cache
   await cache.del(CacheManager.getPackageCountKey());
 }
-
-export async function clearAllCache() {
-  await cache.flush();
-} 

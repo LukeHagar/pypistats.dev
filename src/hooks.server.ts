@@ -59,10 +59,7 @@ async function consumeSlidingWindow(key: string, points: number, windowSeconds: 
     redis.call('EXPIRE', key, windowStart + (60*60*24) == 0 and 60 or math.floor((now - windowStart)/1000) + 5)
     return count
   `;
-  const count = (await client.eval(lua, {
-    keys: [listKey],
-    arguments: [String(now), String(windowStart), String(points), String(MAX_REQUESTS)]
-  })) as number;
+  const count = await client.send(lua, [listKey, String(now), String(windowStart), String(points), String(MAX_REQUESTS)]);
   return { allowed: count <= MAX_REQUESTS, remaining: Math.max(0, MAX_REQUESTS - count) };
 }
 
