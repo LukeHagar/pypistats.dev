@@ -41,7 +41,7 @@ services:
       DATABASE_URL: postgresql://pypistats:${POSTGRES_PASSWORD}@db:5432/pypistats?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     ports:
-      - 3000:3000
+      - 2567:2567
     command: [ "sh", "-c", "bun run prisma migrate deploy && bun run build/index.js" ]
 
 volumes:
