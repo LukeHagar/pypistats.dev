@@ -1,5 +1,5 @@
 import { mdsvex } from 'mdsvex';
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,7 +8,10 @@ const config = {
 	// for more information about preprocessors
 	preprocess: [vitePreprocess(), mdsvex()],
 	kit: {
-    adapter: adapter(),
+		adapter: adapter({
+			// Fallback to Node.js adapter for serverless environments
+			fallback: 'index.html'
+		}),
 		experimental: {
 			// async: true,
 			remoteFunctions: true
