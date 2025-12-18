@@ -166,7 +166,9 @@ export class LockManager {
         return null;
       }
       const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const result = await client.setex(key, ttlSeconds, token);
+      // Atomic lock: SET key token NX EX ttlSeconds
+      // If key already exists, Redis returns null and we treat it as "lock not acquired".
+      const result = await client.send('SET', [key, token, 'NX', 'EX', String(ttlSeconds)]);
       return result === 'OK' ? token : null;
     } catch (error) {
       console.error('Redis acquireLock error:', error);
@@ -192,8 +194,9 @@ export class LockManager {
           return 0
         end
       `;
-      const res = await client.send(lua, [key, token]);
-      return res
+      // EVAL <script> <numkeys> <key...> <arg...>
+      const res = await client.send('EVAL', [lua, '1', key, token]);
+      return Number(res) === 1;
     } catch (error) {
       console.error('Redis releaseLock error:', error);
       return false;

@@ -23,8 +23,9 @@ REDIS_URL=redis://redis:6379
 
 # BigQuery
 GOOGLE_PROJECT_ID=your-project
-# Prefer JSON for container environments
-GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n","client_email":"...","client_id":"...","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"..."}
+# Base64-encoded service account JSON (recommended for Dokploy)
+# Example: echo -n '{"type":"service_account",...}' | base64 -w0
+GOOGLE_APPLICATION_CREDENTIALS_BASE64=...
 ```
 
 2) Start the stack locally
@@ -38,7 +39,7 @@ The app will be available at http://localhost:3000
 3) Running in Coolify
 
 - Add this repository as an application in Coolify and choose Docker Compose.
-- In the service configuration, add your environment variables (DATABASE_URL, REDIS_URL, GOOGLE_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS_JSON) via Coolify’s UI. Coolify will inject them for you — no file changes needed.
+- In the service configuration, add your environment variables (DATABASE_URL, REDIS_URL, GOOGLE_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS_BASE64) via Coolify’s UI. Coolify will inject them for you — no file changes needed.
 - Deploy. The app will run the database migrations on startup and serve on port 3000.
 
 ## API overview

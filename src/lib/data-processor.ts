@@ -31,20 +31,39 @@ export class DataProcessor {
   private locks: LockManager;
 
   constructor() {
-    // Handle credentials from environment variable or file
-    const base64Credentials = env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
+    // BigQuery credentials: base64-encoded service account JSON.
+    // We intentionally standardize on base64 for container deployments.
+    const base64Credentials = (env.GOOGLE_APPLICATION_CREDENTIALS_BASE64 || '').trim();
     if (!base64Credentials) {
-      throw new Error('GOOGLE_APPLICATION_CREDENTIALS_BASE64 is not set');
+      throw new Error(
+        'Missing BigQuery credentials: set GOOGLE_APPLICATION_CREDENTIALS_BASE64 to a base64-encoded service-account JSON'
+      );
     }
 
-    const decoded = Buffer.from(base64Credentials, 'base64').toString('utf8');
+    let decodedJson = '';
+    try {
+      decodedJson = Buffer.from(base64Credentials, 'base64').toString('utf8').trim();
+    } catch (e) {
+      console.error('Failed to base64-decode GOOGLE_APPLICATION_CREDENTIALS_BASE64:', e);
+      throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_BASE64: base64 decode failed');
+    }
 
-    const credentials = JSON.parse(decoded);
+    let credentials: any;
+    try {
+      credentials = JSON.parse(decodedJson);
+    } catch (e) {
+      console.error('Failed to parse decoded Google credentials JSON:', e);
+      throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_BASE64: decoded value is not valid JSON');
+    }
 
-    // Initialize BigQuery client with flexible credential handling
+    if (!credentials?.project_id || typeof credentials.project_id !== 'string') {
+      throw new Error('Invalid Google credentials JSON: missing "project_id"');
+    }
+
+    // Initialize BigQuery client
     const bigQueryConfig = {
       projectId: credentials.project_id,
-      credentials: credentials,
+      credentials
     };
 
     this.bigquery = new BigQuery(bigQueryConfig);
@@ -404,10 +423,69 @@ export class DataProcessor {
     if (!token) return;
     try {
       const data = await this.getPackageDownloadStats(packageName, startDate, endDate);
-      await this.updateDatabase(data, startDate); // date not used inside for deletes per date; safe
+      await this.updateDatabaseForPackageRange(packageName, data);
       // Recompute __all__ for these dates for this package is not needed; __all__ refers to special package '__all__'
     } finally {
       await this.locks.releaseLock(lockKey, token);
+    }
+  }
+
+  /**
+   * Safely upsert a package's data across a date range.
+   *
+   * Important: Deletes must be scoped to the specific package; otherwise an on-demand
+   * refresh could wipe out all packages' rows for a given date.
+   */
+  private async updateDatabaseForPackageRange(packageName: string, data: ProcessedData): Promise<void> {
+    const byTableAndDate = new Map<string, Map<string, any[]>>();
+
+    for (const [table, rows] of Object.entries(data)) {
+      if (!byTableAndDate.has(table)) byTableAndDate.set(table, new Map());
+      const byDate = byTableAndDate.get(table)!;
+      for (const row of rows) {
+        // Normalize to YYYY-MM-DD so BigQuery DATE shapes group correctly
+        const d = this.normalizeDate((row as any).date);
+        const dateKey = d.toISOString().slice(0, 10);
+        if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+        byDate.get(dateKey)!.push(row);
+      }
+    }
+
+    for (const [table, byDate] of byTableAndDate.entries()) {
+      for (const [dateStr, rows] of byDate.entries()) {
+        // Transaction per table+date: delete package-scoped rows, then insert replacements.
+        await prisma.$transaction(async (tx) => {
+          const dateObj = this.normalizeDate(dateStr);
+
+          switch (table) {
+            case 'overall':
+              await tx.overallDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              break;
+            case 'python_major':
+              await tx.pythonMajorDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              break;
+            case 'python_minor':
+              await tx.pythonMinorDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              break;
+            case 'system':
+              await tx.systemDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              break;
+            case 'installer':
+              await (tx as any).installerDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              break;
+            case 'version':
+              if ((tx as any).versionDownloadCount) {
+                await (tx as any).versionDownloadCount.deleteMany({ where: { date: dateObj, package: packageName } });
+              }
+              break;
+            default:
+              return;
+          }
+
+          // Reuse existing insert normalization (it can parse BigQuery date shapes).
+          await this.insertRecords(table, rows.map((r) => ({ ...r, package: packageName })), tx);
+        });
+      }
     }
   }
 
@@ -562,59 +640,11 @@ export class DataProcessor {
   }
 
   private async insertRecords(table: string, records: any[], tx: Prisma.TransactionClient): Promise<void> {
-    const normalizeDate = (value: any): Date => {
-      if (value instanceof Date) return value;
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-          const d = new Date(`${trimmed}T00:00:00Z`);
-          if (!isNaN(d.getTime())) return d;
-        }
-        const d = new Date(trimmed);
-        if (!isNaN(d.getTime())) return d;
-      }
-      if (value && typeof value === 'object') {
-        // BigQuery DATE often arrives as { value: 'YYYY-MM-DD' }
-        if (typeof (value as any).value === 'string') {
-          return normalizeDate((value as any).value);
-        }
-        // Some drivers return { year, month, day }
-        const maybeY = (value as any).year;
-        const maybeM = (value as any).month;
-        const maybeD = (value as any).day;
-        if (
-          typeof maybeY === 'number' &&
-          typeof maybeM === 'number' &&
-          typeof maybeD === 'number'
-        ) {
-          const mm = String(maybeM).padStart(2, '0');
-          const dd = String(maybeD).padStart(2, '0');
-          return normalizeDate(`${maybeY}-${mm}-${dd}`);
-        }
-        // Timestamp-like with toDate()
-        if (typeof (value as any).toDate === 'function') {
-          const d = (value as any).toDate();
-          if (d instanceof Date && !isNaN(d.getTime())) return d;
-        }
-        // Timestamp-like with seconds/nanos
-        if (
-          typeof (value as any).seconds === 'number' ||
-          typeof (value as any).nanos === 'number'
-        ) {
-          const seconds = Number((value as any).seconds || 0);
-          const nanos = Number((value as any).nanos || 0);
-          const d = new Date(seconds * 1000 + Math.floor(nanos / 1e6));
-          if (!isNaN(d.getTime())) return d;
-        }
-      }
-      throw new Error(`Invalid date value: ${value}`);
-    };
-
     switch (table) {
       case 'overall':
         await tx.overallDownloadCount.createMany({
           data: records.map(r => ({
-            date: normalizeDate(r.date),
+            date: this.normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -624,7 +654,7 @@ export class DataProcessor {
       case 'python_major':
         await tx.pythonMajorDownloadCount.createMany({
           data: records.map(r => ({
-            date: normalizeDate(r.date),
+            date: this.normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -634,7 +664,7 @@ export class DataProcessor {
       case 'python_minor':
         await tx.pythonMinorDownloadCount.createMany({
           data: records.map(r => ({
-            date: normalizeDate(r.date),
+            date: this.normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -644,7 +674,7 @@ export class DataProcessor {
       case 'system':
         await tx.systemDownloadCount.createMany({
           data: records.map(r => ({
-            date: normalizeDate(r.date),
+            date: this.normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'other',
             downloads: r.downloads
@@ -654,7 +684,7 @@ export class DataProcessor {
       case 'installer':
         await (tx as any).installerDownloadCount.createMany({
           data: records.map(r => ({
-            date: normalizeDate(r.date),
+            date: this.normalizeDate(r.date),
             package: r.package,
             category: r.category ?? 'unknown',
             downloads: r.downloads
@@ -665,7 +695,7 @@ export class DataProcessor {
         if ((tx as any).versionDownloadCount) {
           await (tx as any).versionDownloadCount.createMany({
             data: records.map(r => ({
-              date: normalizeDate(r.date),
+              date: this.normalizeDate(r.date),
               package: r.package,
               category: r.category ?? 'unknown',
               downloads: r.downloads
@@ -674,6 +704,47 @@ export class DataProcessor {
         }
         break;
     }
+  }
+
+  private normalizeDate(value: any): Date {
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(trimmed)) {
+        const d = new Date(`${trimmed}T00:00:00Z`);
+        if (!isNaN(d.getTime())) return d;
+      }
+      const d = new Date(trimmed);
+      if (!isNaN(d.getTime())) return d;
+    }
+    if (value && typeof value === 'object') {
+      // BigQuery DATE often arrives as { value: 'YYYY-MM-DD' }
+      if (typeof (value as any).value === 'string') {
+        return this.normalizeDate((value as any).value);
+      }
+      // Some drivers return { year, month, day }
+      const maybeY = (value as any).year;
+      const maybeM = (value as any).month;
+      const maybeD = (value as any).day;
+      if (typeof maybeY === 'number' && typeof maybeM === 'number' && typeof maybeD === 'number') {
+        const mm = String(maybeM).padStart(2, '0');
+        const dd = String(maybeD).padStart(2, '0');
+        return this.normalizeDate(`${maybeY}-${mm}-${dd}`);
+      }
+      // Timestamp-like with toDate()
+      if (typeof (value as any).toDate === 'function') {
+        const d = (value as any).toDate();
+        if (d instanceof Date && !isNaN(d.getTime())) return d;
+      }
+      // Timestamp-like with seconds/nanos
+      if (typeof (value as any).seconds === 'number' || typeof (value as any).nanos === 'number') {
+        const seconds = Number((value as any).seconds || 0);
+        const nanos = Number((value as any).nanos || 0);
+        const d = new Date(seconds * 1000 + Math.floor(nanos / 1e6));
+        if (!isNaN(d.getTime())) return d;
+      }
+    }
+    throw new Error(`Invalid date value: ${value}`);
   }
 
   private async getAggregatedData(table: string, date: string) {

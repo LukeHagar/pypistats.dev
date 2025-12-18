@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/prisma.js';
-import { DataProcessor } from '$lib/data-processor.js';
+import { ensurePackageFreshnessFor } from '$lib/api.js';
 import { trackApiEvent } from '$lib/analytics.js';
 
 export const GET: RequestHandler = async ({ params, request }) => {
@@ -11,8 +11,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
   }
 
   try {
-    const processor = new DataProcessor();
-    await processor.ensurePackageFreshness(packageName);
+    await ensurePackageFreshnessFor(packageName);
 
     const [overallAll, systemAll, pyMajorAll, pyMinorAll] = await Promise.all([
       prisma.overallDownloadCount.groupBy({

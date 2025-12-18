@@ -9,7 +9,8 @@ function getProcessor() {
   if (!processor) processor = new DataProcessor();
   return processor;
 }
-async function ensurePackageFreshnessFor(packageName: string) {
+
+export async function ensurePackageFreshnessFor(packageName: string) {
   try {
     await getProcessor().ensurePackageFreshness(packageName);
   } catch (error) {
@@ -27,9 +28,7 @@ export async function getRecentDownloads(packageName: string, category?: string)
   const cacheKey = CacheManager.getRecentStatsKey(packageName);
 
   // Ensure DB has fresh data for this package before computing recent
-  if (!category) {
-    await ensurePackageFreshnessFor(packageName);
-  }
+  await ensurePackageFreshnessFor(packageName);
 
   if (category && RECENT_CATEGORIES.includes(category)) {
     // Compute recent from overall without mirrors

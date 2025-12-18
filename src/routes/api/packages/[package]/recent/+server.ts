@@ -3,7 +3,6 @@ import type { RequestHandler } from './$types';
 import { getRecentDownloads } from '$lib/api.js';
 import { RECENT_CATEGORIES } from '$lib/database.js';
 import { RateLimiter } from '$lib/redis.js';
-import { DataProcessor } from '$lib/data-processor.js';
 import { trackApiEvent } from '$lib/analytics.js';
 
 const rateLimiter = new RateLimiter();
@@ -31,10 +30,6 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
     }
     
     try {
-        // Ensure package data is present/fresh on demand
-        const processor = new DataProcessor();
-        await processor.ensurePackageFreshness(packageName);
-
         const downloads = await getRecentDownloads(packageName, category || undefined);
         
         if (downloads.length === 0) {
