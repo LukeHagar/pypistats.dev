@@ -1,11 +1,13 @@
 services:
   db:
-    image: postgres:16.6
+    # IMPORTANT: existing volume contains a Postgres 18 cluster under /var/lib/postgresql/data/18/docker
+    image: postgres:18.1
     restart: unless-stopped
     environment:
       POSTGRES_DB: pypistats
       POSTGRES_USER: pypistats
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/18/docker
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
