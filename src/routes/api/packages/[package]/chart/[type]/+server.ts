@@ -4,14 +4,30 @@ import { CacheManager } from '$lib/redis.js';
 import { getOverallDownloads, getPythonMajorDownloads, getPythonMinorDownloads, getSystemDownloads, getInstallerDownloads, getVersionDownloads } from '$lib/api.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import { trackApiEvent } from '$lib/analytics.js';
+import { rateLimit } from '$lib/rate-limit.js';
+import { validatePackageName } from '$lib/package-name.js';
 
 const cache = new CacheManager();
 
 const width = 1200;
 const height = 600;
 
-export const GET: RequestHandler = async ({ params, url, request }) => {
-  const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
+function mergeHeaders(...parts: Array<Record<string, string> | undefined>): HeadersInit {
+  const out: Record<string, string> = {};
+  for (const p of parts) {
+    if (!p) continue;
+    for (const [k, v] of Object.entries(p)) out[k] = v;
+  }
+  return out;
+}
+
+export const GET: RequestHandler = async (event) => {
+  const { params, url, request } = event;
+  const parsed = validatePackageName(params.package || '');
+  if (!parsed.ok) {
+    return new Response('Invalid package', { status: 400 });
+  }
+  const packageName = parsed.name;
   const type = params.type || 'overall';
   const chartType = (url.searchParams.get('chart') || 'line').toLowerCase(); // 'line' | 'bar'
   const mirrors = url.searchParams.get('mirrors') || undefined; // for overall
@@ -19,8 +35,13 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
   const os = url.searchParams.get('os') || undefined; // for system filter
   const format = (url.searchParams.get('format') || '').toLowerCase(); // 'json' to return data only
 
-  if (!packageName || packageName === '__all__') {
-    return new Response('Invalid package', { status: 400 });
+  // packageName validated above
+
+  // Protect chart rendering (CPU heavy). Slightly higher quota if returning JSON only.
+  const isJsonOnly = format === 'json';
+  const rl = await rateLimit(event, `api:chart:${type}`, isJsonOnly ? 120 : 60, 60);
+  if (rl.limited) {
+    return new Response('Rate limit exceeded', { status: 429, headers: rl.headers });
   }
 
   const cacheKey = `pypistats:chart:${packageName}:${type}:${chartType}:${mirrors || ''}:${version || ''}:${os || ''}`;
@@ -29,7 +50,12 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
     const cached = await cache.get<string>(cacheKey);
     if (cached) {
       const buffer = Buffer.from(cached, 'base64');
-      return new Response(buffer, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' } });
+      return new Response(buffer, {
+        headers: mergeHeaders(rl.headers, {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=3600'
+        })
+      });
     }
   }
 
@@ -110,7 +136,12 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
         format: 'json',
         ok: true
       }, request.headers);
-      return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+      return new Response(JSON.stringify(body), {
+        headers: mergeHeaders(rl.headers, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300'
+        })
+      });
     }
 
     const configuration = {
@@ -155,7 +186,12 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
       format: 'png',
       ok: true
     }, request.headers);
-    return new Response(image, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' } });
+    return new Response(image, {
+      headers: mergeHeaders(rl.headers, {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600'
+      })
+    });
   } catch (error) {
     console.error('Error rendering chart:', error);
     trackApiEvent('api_chart', `/api/packages/${encodeURIComponent(packageName)}/chart/${type}`, {

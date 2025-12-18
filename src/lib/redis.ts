@@ -8,16 +8,16 @@ let isDisconnecting = false;
 export function getRedisClient() {
   if (!redisClient && !isConnecting) {
     isConnecting = true;
-    redisClient = new RedisClient();
-
- 
+    const url = process.env.REDIS_URL;
+    // Bun RedisClient supports a URL string (e.g. redis://:pass@host:6379)
+    redisClient = url ? new RedisClient(url) : new RedisClient();
 
     redisClient.onconnect = () => {
       console.log('Redis Client Connected');
       isConnecting = false;
     }
 
-    redisClient.onclose = (error: any) => {
+    redisClient.onclose = (error?: Error) => {
       console.log('Redis Client Connection Ended', error);
       redisClient = null;
       isConnecting = false;
@@ -27,6 +27,7 @@ export function getRedisClient() {
     redisClient.connect().catch((error) => {
       console.error('Redis Client Connection Failed:', error);
       isConnecting = false;
+      redisClient = null;
     });
   }
   return redisClient;
@@ -72,12 +73,11 @@ export async function forceDisconnectRedis(): Promise<void> {
 
 // Cache utilities
 export class CacheManager {
-  private client = getRedisClient();
   private defaultTTL = 3600; // 1 hour
 
   async get<T>(key: string): Promise<T | null> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for get operation');
         return null;
@@ -92,7 +92,7 @@ export class CacheManager {
 
   async set(key: string, value: any, ttl: number = this.defaultTTL): Promise<void> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for set operation');
         return;
@@ -105,7 +105,7 @@ export class CacheManager {
 
   async del(key: string): Promise<void> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for del operation');
         return;
@@ -118,13 +118,13 @@ export class CacheManager {
 
   async exists(key: string): Promise<boolean> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for exists operation');
         return false;
       }
       const result = await client.exists(key);
-      return result
+      return Boolean(result);
     } catch (error) {
       console.error('Redis exists error:', error);
       return false;
@@ -153,14 +153,12 @@ export class CacheManager {
  * Distributed lock utilities backed by Redis
  */
 export class LockManager {
-  private client = getRedisClient();
-
   /**
    * Try to acquire a lock for a specific key. Returns a unique token if acquired, or null if not.
    */
   async acquireLock(key: string, ttlSeconds: number): Promise<string | null> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for acquireLock');
         return null;
@@ -181,7 +179,7 @@ export class LockManager {
    */
   async releaseLock(key: string, token: string): Promise<boolean> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for releaseLock');
         return false;
@@ -220,11 +218,9 @@ export class LockManager {
 
 // Rate limiting utilities
 export class RateLimiter {
-  private client = getRedisClient();
-
   async isRateLimited(key: string, limit: number, window: number): Promise<boolean> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for rate limiting');
         return false;
@@ -242,7 +238,7 @@ export class RateLimiter {
 
   async getRemainingRequests(key: string): Promise<number> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for remaining requests check');
         return 100;
@@ -258,12 +254,11 @@ export class RateLimiter {
 
 // Session management utilities
 export class SessionManager {
-  private client = getRedisClient();
   private defaultTTL = 86400; // 24 hours
 
   async setSession(sessionId: string, data: any): Promise<void> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for set session');
         return;
@@ -276,7 +271,7 @@ export class SessionManager {
 
   async getSession(sessionId: string): Promise<any | null> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for get session');
         return null;
@@ -291,7 +286,7 @@ export class SessionManager {
 
   async deleteSession(sessionId: string): Promise<void> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for delete session');
         return;
@@ -304,7 +299,7 @@ export class SessionManager {
 
   async refreshSession(sessionId: string): Promise<void> {
     try {
-      const client = this.client;
+      const client = getRedisClient();
       if (!client) {
         console.warn('Redis client not available for refresh session');
         return;

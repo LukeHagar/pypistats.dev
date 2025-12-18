@@ -1,76 +1,98 @@
-import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { getRecentDownloads } from '$lib/api.js';
-import { RECENT_CATEGORIES } from '$lib/database.js';
-import { RateLimiter } from '$lib/redis.js';
-import { trackApiEvent } from '$lib/analytics.js';
+import { json } from "@sveltejs/kit";
+import type { RequestHandler } from "./$types";
+import { getRecentDownloads } from "$lib/api.js";
+import { RECENT_CATEGORIES } from "$lib/database.js";
+import { trackApiEvent } from "$lib/analytics.js";
+import { rateLimit } from "$lib/rate-limit.js";
+import { jsonError } from "$lib/api-response.js";
+import { validatePackageName } from "$lib/package-name.js";
 
-const rateLimiter = new RateLimiter();
+export const GET: RequestHandler = async (event) => {
+	const { params, url, request } = event;
+	const parsed = validatePackageName(params.package || "");
+	if (!parsed.ok) {
+		return jsonError(event, 400, "invalid_package", "Invalid package name");
+	}
+	const packageName = parsed.name;
+	const category = url.searchParams.get("period");
 
-export const GET: RequestHandler = async ({ params, url, request }) => {
-    const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
-    const category = url.searchParams.get('period');
-    
-    if (packageName === '__all__') {
-        return json({ error: 'Invalid package name' }, { status: 400 });
-    }
-    
-    // Rate limiting
-    const clientIP = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
-                    'unknown';
-    const rateLimitKey = `rate_limit:recent:${clientIP}`;
-    
-    const isLimited = await rateLimiter.isRateLimited(rateLimitKey, 100, 3600); // 100 requests per hour
-    if (isLimited) {
-        return json({ 
-            error: 'Rate limit exceeded',
-            message: 'Too many requests. Please try again later.'
-        }, { status: 429 });
-    }
-    
-    try {
-        const downloads = await getRecentDownloads(packageName, category || undefined);
-        
-        if (downloads.length === 0) {
-            return json({ error: 'Package not found' }, { status: 404 });
-        }
-        
-        const response: any = {
-            package: packageName,
-            type: 'recent_downloads'
-        };
-        
-        if (category) {
-            response.data = { [`last_${category}`]: 0 };
-        } else {
-            response.data = { [`last_${RECENT_CATEGORIES[0]}`]: 0, [`last_${RECENT_CATEGORIES[1]}`]: 0, [`last_${RECENT_CATEGORIES[2]}`]: 0 };
-        }
-        
-        for (const download of downloads) {
-            response.data[`last_${download.category}`] = download.downloads;
-        }
-        
-        // Add rate limit headers
-        const remaining = await rateLimiter.getRemainingRequests(rateLimitKey);
-        const headers = {
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': (Math.floor(Date.now() / 1000) + 3600).toString()
-        };
-        
-        trackApiEvent('api_recent', `/api/packages/${encodeURIComponent(packageName)}/recent`, {
-            package: packageName,
-            period: String(category ?? ''),
-            ok: true
-        }, request.headers);
-        return json(response, { headers });
-    } catch (error) {
-        console.error('Error fetching recent downloads:', error);
-        trackApiEvent('api_recent', `/api/packages/${encodeURIComponent(packageName)}/recent`, {
-            package: packageName,
-            period: String(category ?? ''),
-            ok: false
-        }, request.headers);
-        return json({ error: 'Internal server error' }, { status: 500 });
-    }
-}; 
+	const rl = await rateLimit(event, "api:recent", 300, 3600);
+	if (rl.limited) {
+		return jsonError(
+			event,
+			429,
+			"rate_limited",
+			"Too many requests. Please try again later.",
+			rl.headers,
+		);
+	}
+
+	try {
+		const downloads = await getRecentDownloads(
+			packageName,
+			category || undefined,
+		);
+
+		if (downloads.length === 0) {
+			return jsonError(
+				event,
+				404,
+				"not_found",
+				"Package not found",
+				rl.headers,
+			);
+		}
+
+		const response: {
+			package: string;
+			type: "recent_downloads";
+			data: Record<string, number | bigint>;
+		} = {
+			package: packageName,
+			type: "recent_downloads",
+			data: {},
+		};
+
+		if (category) response.data[`last_${category}`] = 0;
+		else {
+			response.data[`last_${RECENT_CATEGORIES[0]}`] = 0;
+			response.data[`last_${RECENT_CATEGORIES[1]}`] = 0;
+			response.data[`last_${RECENT_CATEGORIES[2]}`] = 0;
+		}
+
+		for (const download of downloads) {
+			response.data[`last_${download.category}`] = download.downloads;
+		}
+
+		trackApiEvent(
+			"api_recent",
+			`/api/packages/${encodeURIComponent(packageName)}/recent`,
+			{
+				package: packageName,
+				period: String(category ?? ""),
+				ok: true,
+			},
+			request.headers,
+		);
+		return json(response, { headers: rl.headers });
+	} catch (error) {
+		console.error("Error fetching recent downloads:", error);
+		trackApiEvent(
+			"api_recent",
+			`/api/packages/${encodeURIComponent(packageName)}/recent`,
+			{
+				package: packageName,
+				period: String(category ?? ""),
+				ok: false,
+			},
+			request.headers,
+		);
+		return jsonError(
+			event,
+			500,
+			"internal_error",
+			"Internal server error",
+			rl.headers,
+		);
+	}
+};

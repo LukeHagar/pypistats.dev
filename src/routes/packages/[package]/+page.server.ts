@@ -8,22 +8,16 @@ import {
   getInstallerDownloads,
   getVersionDownloads
 } from '$lib/api.js';
+import { error as kitError } from '@sveltejs/kit';
+import { validatePackageName } from '$lib/package-name.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const packageName = params.package?.replace(/\./g, '-').replace(/_/g, '-') || '';
-
-  if (!packageName || packageName === '__all__') {
-    return {
-      packageName,
-      recentStats: Promise.resolve(null),
-      overallStats: Promise.resolve([]),
-      pythonMajorStats: Promise.resolve([]),
-      pythonMinorStats: Promise.resolve([]),
-      systemStats: Promise.resolve([]),
-      summaryTotals: Promise.resolve({})
-    };
+  const parsed = validatePackageName(params.package || '');
+  if (!parsed.ok) {
+    throw kitError(404, 'Package not found');
   }
+  const packageName = parsed.name;
 
   // Return promises directly for streaming - SvelteKit will handle the streaming
   const recentStatsP = getRecentDownloads(packageName).then((recent) => {
