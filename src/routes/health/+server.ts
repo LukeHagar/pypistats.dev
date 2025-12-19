@@ -37,7 +37,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const client = getRedisClient();
 		if (!client) throw new Error('redis client not connected');
-		const res = await client.send('PING', []);
+		const res = await client.ping();
 		details.redis = res === 'PONG' ? 'ok' : 'unexpected';
 		if (res !== 'PONG') ok = false;
 	} catch (e) {

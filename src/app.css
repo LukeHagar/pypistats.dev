@@ -1,18 +1,16 @@
+/* Force Tailwind's `dark` variant to be class-based (Skeleton uses @variant dark internally). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
-/* Global dark theme defaults */
-:root {
-  color-scheme: dark;
-}
+/* Skeleton (Tailwind utilities + tokens) */
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton-svelte';
+@import '@skeletonlabs/skeleton/themes/wintry';
 
-html, body {
-  background-color: #0b0f19;
-  color: #e5e7eb;
-}
-
-/* Tailwind utility overrides for dark appearance */
+/* Typography helpers for content pages */
 .prose {
-  @apply prose-invert;
+	@apply prose-invert;
 }

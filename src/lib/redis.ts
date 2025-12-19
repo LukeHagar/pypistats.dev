@@ -1,7 +1,8 @@
-import { RedisClient } from 'bun';
+import { createClient, type RedisClientType } from 'redis';
 
 // Redis client instance
-let redisClient: RedisClient | null = null;
+type Client = RedisClientType;
+let redisClient: Client | null = null;
 let isConnecting = false;
 let isDisconnecting = false;
 
@@ -9,20 +10,23 @@ export function getRedisClient() {
   if (!redisClient && !isConnecting) {
     isConnecting = true;
     const url = process.env.REDIS_URL;
-    // Bun RedisClient supports a URL string (e.g. redis://:pass@host:6379)
-    redisClient = url ? new RedisClient(url) : new RedisClient();
+    redisClient = createClient({ url });
 
-    redisClient.onconnect = () => {
+    redisClient.on('connect', () => {
       console.log('Redis Client Connected');
       isConnecting = false;
-    }
+    });
 
-    redisClient.onclose = (error?: Error) => {
-      console.log('Redis Client Connection Ended', error);
+    redisClient.on('end', () => {
+      console.log('Redis Client Connection Ended');
       redisClient = null;
       isConnecting = false;
       isDisconnecting = false;
-    }
+    });
+
+    redisClient.on('error', (error) => {
+      console.error('Redis Client Error:', error);
+    });
 
     redisClient.connect().catch((error) => {
       console.error('Redis Client Connection Failed:', error);
@@ -41,7 +45,7 @@ export async function closeRedisClient(): Promise<void> {
     isDisconnecting = true;
     try {
       console.log('Closing Redis client connection...');
-      redisClient.close();
+      await redisClient.quit();
       console.log('Redis client connection closed successfully');
     } catch (error) {
       console.error('Error closing Redis client:', error);
@@ -60,7 +64,7 @@ export async function forceDisconnectRedis(): Promise<void> {
     isDisconnecting = true;
     try {
       console.log('Force disconnecting Redis client...');
-      redisClient.close();
+      redisClient.disconnect();
       console.log('Redis client force disconnected');
     } catch (error) {
       console.error('Error force disconnecting Redis client:', error);
@@ -97,7 +101,7 @@ export class CacheManager {
         console.warn('Redis client not available for set operation');
         return;
       }
-      await client.setex(key, ttl, JSON.stringify(value));
+      await client.setEx(key, ttl, JSON.stringify(value));
     } catch (error) {
       console.error('Redis set error:', error);
     }
@@ -166,7 +170,7 @@ export class LockManager {
       const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       // Atomic lock: SET key token NX EX ttlSeconds
       // If key already exists, Redis returns null and we treat it as "lock not acquired".
-      const result = await client.send('SET', [key, token, 'NX', 'EX', String(ttlSeconds)]);
+      const result = await client.set(key, token, { NX: true, EX: ttlSeconds });
       return result === 'OK' ? token : null;
     } catch (error) {
       console.error('Redis acquireLock error:', error);
@@ -193,7 +197,7 @@ export class LockManager {
         end
       `;
       // EVAL <script> <numkeys> <key...> <arg...>
-      const res = await client.send('EVAL', [lua, '1', key, token]);
+      const res = await client.sendCommand(['EVAL', lua, '1', key, token]);
       return Number(res) === 1;
     } catch (error) {
       console.error('Redis releaseLock error:', error);
@@ -263,7 +267,7 @@ export class SessionManager {
         console.warn('Redis client not available for set session');
         return;
       }
-      await client.setex(sessionId, this.defaultTTL, JSON.stringify(data));
+      await client.setEx(sessionId, this.defaultTTL, JSON.stringify(data));
     } catch (error) {
       console.error('Set session error:', error);
     }
@@ -306,7 +310,7 @@ export class SessionManager {
       }
       const data = await client.get(sessionId);
       if (data) {
-        await client.setex(sessionId, this.defaultTTL, data);
+        await client.setEx(sessionId, this.defaultTTL, data);
       }
     } catch (error) {
       console.error('Refresh session error:', error);

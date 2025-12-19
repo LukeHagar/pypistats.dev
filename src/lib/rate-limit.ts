@@ -33,11 +33,11 @@ export async function rateLimit(
 	const key = `pypistats:rl:${scope}:${ip}`;
 
 	try {
-		const current = Number(await client.send('INCR', [key]));
+		const current = Number(await client.incr(key));
 		if (current === 1) {
-			await client.send('EXPIRE', [key, String(windowSeconds)]);
+			await client.expire(key, windowSeconds);
 		}
-		const ttl = Number(await client.send('TTL', [key]));
+		const ttl = Number(await client.ttl(key));
 		const retryAfterSeconds = ttl >= 0 ? ttl : windowSeconds;
 		const remaining = Math.max(0, limit - current);
 

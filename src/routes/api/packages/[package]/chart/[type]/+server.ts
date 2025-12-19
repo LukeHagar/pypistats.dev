@@ -186,7 +186,7 @@ export const GET: RequestHandler = async (event) => {
       format: 'png',
       ok: true
     }, request.headers);
-    return new Response(image, {
+    return new Response(new Uint8Array(image), {
       headers: mergeHeaders(rl.headers, {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=3600'

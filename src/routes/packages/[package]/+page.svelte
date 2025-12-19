@@ -3,8 +3,12 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import { PLAUSIBLE_DOMAIN, PLAUSIBLE_EVENT_ENDPOINT, PLAUSIBLE_CAPTURE_LOCALHOST } from '$lib/plausible-config.js';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { MetaTags } from 'svelte-meta-tags';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Skeleton from '$lib/components/ui/Skeleton.svelte';
+	import SkeletonTable from '$lib/components/ui/SkeletonTable.svelte';
 	const { data }: { data: PageData } = $props();
 
 	let overallCanvas: HTMLCanvasElement | null = $state(null);
@@ -117,6 +121,35 @@
 		params: Record<string, string> = {}
 	) {
 		if (!canvas) return;
+
+		const resolveCssColor = (variable: string, fallback: string): string => {
+			if (typeof window === 'undefined') return fallback;
+			const el = document.createElement('span');
+			el.style.color = `var(${variable})`;
+			el.style.position = 'absolute';
+			el.style.left = '-9999px';
+			document.body.appendChild(el);
+			const color = getComputedStyle(el).color || fallback;
+			el.remove();
+			return color;
+		};
+
+		const resolveCssBg = (variable: string, fallback: string): string => {
+			if (typeof window === 'undefined') return fallback;
+			const el = document.createElement('span');
+			el.style.backgroundColor = `var(${variable})`;
+			el.style.position = 'absolute';
+			el.style.left = '-9999px';
+			document.body.appendChild(el);
+			const color = getComputedStyle(el).backgroundColor || fallback;
+			el.remove();
+			return color;
+		};
+
+		const chartText = resolveCssColor('--base-font-color-dark', 'rgb(229, 231, 235)');
+		const chartGrid = resolveCssColor('--color-surface-200-800', 'rgba(255, 255, 255, 0.12)');
+		const chartMuted = resolveCssColor('--color-surface-400-600', 'rgba(255, 255, 255, 0.7)');
+		const tooltipBg = resolveCssBg('--color-surface-100-900', 'rgba(17, 24, 39, 0.95)');
 		const qs = new URLSearchParams({ format: 'json', chart: 'line', ...params });
 		const resp = await fetch(
 			`/api/packages/${encodeURIComponent(data.packageName)}/chart/${type}?${qs.toString()}`
@@ -132,10 +165,17 @@
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				color: chartText,
 				plugins: {
-					legend: { position: 'bottom' },
-					title: { display: true, text: payload.title },
+					legend: {
+						position: 'bottom',
+						labels: { color: chartText }
+					},
+					title: { display: true, text: payload.title, color: chartText },
 					tooltip: {
+						backgroundColor: tooltipBg,
+						titleColor: chartText,
+						bodyColor: chartText,
 						callbacks: {
 							label: (ctx: any) =>
 								`${ctx.dataset.label}: ${formatNumber(Number(ctx.parsed?.y ?? ctx.raw?.y ?? 0))}`
@@ -146,6 +186,7 @@
 					x: {
 						title: { display: true, text: 'Date' },
 						ticks: {
+							color: chartMuted,
 							autoSkip: true,
 							maxTicksLimit: 8,
 							callback: (value: any, index: number, ticks: any[]) => {
@@ -155,14 +196,17 @@
 								if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}`;
 								return label;
 							}
-						}
+						},
+						grid: { color: chartGrid }
 					},
 					y: {
-						title: { display: true, text: 'Downloads' },
+						title: { display: true, text: 'Downloads', color: chartMuted },
 						beginAtZero: true,
 						ticks: {
+							color: chartMuted,
 							callback: (value: any) => formatCompact(Number(value))
-						}
+						},
+						grid: { color: chartGrid }
 					}
 				}
 			}
@@ -212,32 +256,24 @@
 	keywords={["Python package statistics", "PyPI downloads", "package analytics", "download trends", "Python version usage", "system breakdown"]}
 />
 
-<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+<div class="py-12">
 	<div class="mb-8">
-		<h1 class="mb-2 text-3xl font-bold text-gray-100">{data.packageName}</h1>
-		<p class="text-gray-400">Download statistics from PyPI</p>
+		<h1 class="text-3xl font-bold tracking-tight">{data.packageName}</h1>
+		<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Download statistics from PyPI</p>
 
 		{#if data.meta}
 			{#await data.meta}
 				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
-					<span
-						class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300"
-						>Loading…</span
-					>
+					<Skeleton w="w-28" h="h-6" class="inline-block" rounded="full" />
+					<Skeleton w="w-36" h="h-6" class="inline-block" rounded="full" />
 				</div>
 			{:then meta}
 				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
 					{#if meta.version}
-						<span
-							class="inline-flex items-center rounded-full border border-blue-900 bg-blue-950 px-2.5 py-1 text-blue-300"
-							>v{meta.version}</span
-						>
+						<Badge variant="primary">v{meta.version}</Badge>
 					{/if}
 					{#if meta.latestReleaseDate}
-						<span
-							class="inline-flex items-center rounded-full border border-green-900 bg-green-950 px-2.5 py-1 text-green-300"
-							>Released {meta.latestReleaseDate}</span
-						>
+						<Badge variant="success">Released {meta.latestReleaseDate}</Badge>
 					{/if}
 				</div>
 				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
@@ -246,10 +282,7 @@
 							{#if totals?.system}
 								{#await Promise.resolve(Object.entries(totals.system).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topSys}
 									{#if topSys}
-										<span
-											class="inline-flex items-center rounded-full border border-purple-900 bg-purple-950 px-2.5 py-1 text-purple-300"
-											>Popular system: {topSys[0]}</span
-										>
+										<Badge variant="secondary">Popular system: {topSys[0]}</Badge>
 									{/if}
 								{/await}
 							{/if}
@@ -260,10 +293,7 @@
 							{#if totals?.installer}
 								{#await Promise.resolve(Object.entries(totals.installer).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topInst}
 									{#if topInst}
-										<span
-											class="inline-flex items-center rounded-full border border-indigo-900 bg-indigo-950 px-2.5 py-1 text-indigo-300"
-											>Popular installer: {topInst[0]}</span
-										>
+										<Badge variant="secondary">Popular installer: {topInst[0]}</Badge>
 									{/if}
 								{/await}
 							{/if}
@@ -274,10 +304,7 @@
 							{#if totals?.version}
 								{#await Promise.resolve(Object.entries(totals.version).sort((a, b) => Number(b[1]) - Number(a[1]))[0]) then topVer}
 									{#if topVer}
-										<span
-											class="inline-flex items-center rounded-full border border-amber-900 bg-amber-950 px-2.5 py-1 text-amber-300"
-											>Top version: {topVer[0]}</span
-										>
+										<Badge variant="warning">Top version: {topVer[0]}</Badge>
 									{/if}
 								{/await}
 							{/if}
@@ -285,29 +312,20 @@
 					{/if}
 				</div>
 				<div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
-					<a
-						class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
-						href={meta.pypiUrl}
-						rel="noopener"
-						target="_blank">View on PyPI</a
-						>
+					<Button href={meta.pypiUrl} target="_blank" rel="noopener" variant="surface" size="sm"
+						>View on PyPI</Button
+					>
 					{#if meta.homePage}
-						<a
-							class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
-							href={meta.homePage}
-							rel="noopener"
-							target="_blank">Homepage</a
-							>
+						<Button href={meta.homePage} target="_blank" rel="noopener" variant="surface" size="sm"
+							>Homepage</Button
+						>
 					{/if}
 					{#if meta.projectUrls}
 						{#each Object.entries(meta.projectUrls).filter(([label, url]) => !['homepage'].includes(label.toLowerCase())) as [label, url]}
 							{#if typeof url === 'string'}
-								<a
-									class="inline-flex items-center rounded-full border border-gray-700 bg-gray-900 px-2.5 py-1 text-gray-300 hover:bg-gray-800"
-									href={url}
-									rel="noopener"
-									target="_blank">{label}</a
-									>
+								<Button href={url} target="_blank" rel="noopener" variant="surface" size="sm"
+									>{label}</Button
+								>
 							{/if}
 						{/each}
 					{/if}
@@ -318,293 +336,279 @@
 
 	<!-- Recent Stats + Consolidated Totals -->
 	{#if data.recentStats}
-		<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-			<div class="border-b border-gray-800 px-6 py-4">
-				<h2 class="text-lg font-semibold text-gray-100">Recent Downloads</h2>
-			</div>
+		<Card class="mb-8" padding="none">
 			<div class="p-6">
+				<h2 class="text-lg font-semibold">Recent Downloads</h2>
+				<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Recent + overall breakdowns</p>
+			</div>
+			<div class="px-6 pb-6">
 				<div class="flex flex-wrap gap-6">
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-gray-300">Recent</h4>
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
-								<thead>
-									<tr>
-										<th
-											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>Period</th
-											>
-										<th
-											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>Downloads</th
-											>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-800 bg-gray-950">
-									{#await data.recentStats}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading recent stats..." /></td></tr>
-									{:then rs}
+						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Recent</h4>
+						{#await data.recentStats}
+							<SkeletonTable cols={2} rows={2} />
+						{:then rs}
+							<div class="table-wrap">
+								<table class="table">
+									<thead>
+										<tr>
+											<th>Period</th>
+											<th class="text-right">Downloads</th>
+										</tr>
+									</thead>
+									<tbody>
 										{#each [['week', Number((rs as any)?.last_week || 0)], ['month', Number((rs as any)?.last_month || 0)]] as [period, count]}
 											<tr>
-												<td class="px-6 py-3 text-sm text-gray-300 capitalize">{period}</td>
-												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
-													>{formatNumber(Number(count))}</td
-												>
+												<td class="capitalize">{period}</td>
+												<td class="text-right font-semibold">{formatNumber(Number(count))}</td>
 											</tr>
 										{/each}
-									{:catch _}
-										<tr
-											><td class="px-6 py-3 text-sm text-red-600" colspan="2">Failed to load</td
-											></tr
-										>
-									{/await}
-								</tbody>
-							</table>
-						</div>
+									</tbody>
+								</table>
+							</div>
+						{:catch _}
+							<div class="text-sm text-[var(--color-error-400)]">Failed to load</div>
+						{/await}
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-gray-300">Overall</h4>
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
-								<thead>
-									<tr>
-										<th
-											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>Category</th
-											>
-										<th
-											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>Downloads</th
-											>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-800 bg-gray-950">
-									{#await (data as any).summaryTotals}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading overall stats..." /></td></tr>
-									{:then totals}
+						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Overall</h4>
+						{#await (data as any).summaryTotals}
+							<SkeletonTable cols={2} rows={6} />
+						{:then totals}
+							<div class="table-wrap">
+								<table class="table">
+									<thead>
+										<tr>
+											<th>Category</th>
+											<th class="text-right">Downloads</th>
+										</tr>
+									</thead>
+									<tbody>
 										{#each Object.entries(totals?.overall || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
-												<td class="px-6 py-3 text-sm text-gray-300 capitalize"
-													>{k.replace(/_/g, ' ')}</td
-												>
-												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
-													>{formatNumber(Number(v))}</td
-												>
+												<td class="capitalize">{k.replace(/_/g, ' ')}</td>
+												<td class="text-right font-semibold">{formatNumber(Number(v))}</td>
 											</tr>
 										{/each}
-									{:catch _}
-										<tr
-											><td class="px-6 py-3 text-sm text-red-600" colspan="2">Failed to load</td
-											></tr
-										>
-									{/await}
-								</tbody>
-							</table>
-						</div>
+									</tbody>
+								</table>
+							</div>
+						{:catch _}
+							<div class="text-sm text-[var(--color-error-400)]">Failed to load</div>
+						{/await}
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-gray-300">Systems</h4>
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
-								<thead>
-									<tr>
-										<th
-											class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>System</th
-											>
-										<th
-											class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
-											>Downloads</th
-											>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-800 bg-gray-950">
-									{#await (data as any).summaryTotals}
-										<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading system stats..." /></td></tr>
-									{:then totals}
+						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Systems</h4>
+						{#await (data as any).summaryTotals}
+							<SkeletonTable cols={2} rows={6} />
+						{:then totals}
+							<div class="table-wrap">
+								<table class="table">
+									<thead>
+										<tr>
+											<th>System</th>
+											<th class="text-right">Downloads</th>
+										</tr>
+									</thead>
+									<tbody>
 										{#each Object.entries(totals?.system || {}).sort((a, b) => Number(b[1]) - Number(a[1])) as [k, v]}
 											<tr>
-												<td class="px-6 py-3 text-sm text-gray-300 capitalize">{k}</td>
-												<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
-													>{formatNumber(Number(v))}</td
-												>
+												<td class="capitalize">{k}</td>
+												<td class="text-right font-semibold">{formatNumber(Number(v))}</td>
 											</tr>
 										{/each}
-									{:catch _}
-										<tr
-											><td class="px-6 py-3 text-sm text-red-600" colspan="2">Failed to load</td
-											></tr
-										>
-									{/await}
-								</tbody>
-							</table>
-						</div>
+									</tbody>
+								</table>
+							</div>
+						{:catch _}
+							<div class="text-sm text-[var(--color-error-400)]">Failed to load</div>
+						{/await}
 					</div>
 				</div>
 
 				<div class="mt-8">
-					<h3 class="text-md mb-2 font-semibold text-gray-100">Python Versions</h3>
-					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-800 overflow-hidden rounded-md">
-							<thead>
-								<tr>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase"
-										>Version</th
-										>
-									<th
-										class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-400 uppercase"
-										>Downloads</th
-										>
-								</tr>
-							</thead>
-							<tbody class="divide-y divide-gray-800 bg-gray-950">
-								{#await (data as any).summaryTotals}
-									<tr><td class="px-6 py-3 text-sm text-gray-400" colspan="2"><LoadingSpinner size="sm" text="Loading Python versions..." /></td></tr>
-								{:then totals}
+					<h3 class="mb-2 text-md font-semibold">Python Versions</h3>
+					{#await (data as any).summaryTotals}
+						<SkeletonTable cols={2} rows={8} />
+					{:then totals}
+						<div class="table-wrap">
+							<table class="table">
+								<thead>
+									<tr>
+										<th>Version</th>
+										<th class="text-right">Downloads</th>
+									</tr>
+								</thead>
+								<tbody>
 									{#each buildPythonVersionRows(totals?.python_major || {}, totals?.python_minor || {}) as row}
-										<tr class={row.kind === 'major' ? 'bg-gray-900' : ''}>
-											<td class="px-6 py-3 text-sm text-gray-300 capitalize">
+										<tr class={row.kind === 'major' ? 'bg-[var(--color-surface-100-900)]' : ''}>
+											<td class="capitalize">
 												{#if row.kind === 'major'}
 													Python {row.label}
 												{:else}
 													<span class="inline-block pl-6">{row.label}</span>
 												{/if}
 											</td>
-											<td class="px-6 py-3 text-right text-sm font-semibold text-gray-100"
-												>{formatNumber(row.downloads)}</td
-												>
+											<td class="text-right font-semibold">{formatNumber(row.downloads)}</td>
 										</tr>
 									{/each}
-								{:catch _}
-									<tr><td class="px-6 py-3 text-sm text-red-400" colspan="2">Failed to load</td></tr
-									>
-								{/await}
-							</tbody>
-						</table>
-					</div>
+								</tbody>
+							</table>
+						</div>
+					{:catch _}
+						<div class="text-sm text-[var(--color-error-400)]">Failed to load</div>
+					{/await}
 				</div>
 			</div>
-		</div>
+		</Card>
 	{/if}
 
 	<!-- Charts -->
 	{#if data.packageName}
-		<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-			<div class="border-b px-6 py-4">
-				<h2 class="text-lg font-semibold text-gray-100">Overall Downloads Over Time</h2>
-				<p class="text-sm text-gray-400">Includes with and without mirrors</p>
-			</div>
+		<Card class="mb-8" padding="none">
 			<div class="p-6">
+				<h2 class="text-lg font-semibold">Overall Downloads Over Time</h2>
+				<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Includes with and without mirrors</p>
+			</div>
+			<div class="px-6 pb-6">
 				<div class="w-full overflow-x-auto">
 					<div class="relative h-96 w-full">
 						<canvas bind:this={overallCanvas}></canvas>
 					</div>
 				</div>
 			</div>
-		</div>
+		</Card>
 
 		{#await data.pythonMajorStats}
-			<!-- loading placeholder omitted to reduce layout shift -->
+			<Card class="mb-8" padding="none">
+				<div class="p-6">
+					<h2 class="text-lg font-semibold">Python Major Versions</h2>
+				</div>
+				<div class="px-6 pb-6">
+					<Skeleton h="h-96" />
+				</div>
+			</Card>
 		{:then majorArr}
 			{#if majorArr && majorArr.length > 0}
-				<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-					<div class="border-b px-6 py-4">
-						<h2 class="text-lg font-semibold text-gray-100">Python Major Versions</h2>
-					</div>
+				<Card class="mb-8" padding="none">
 					<div class="p-6">
+						<h2 class="text-lg font-semibold">Python Major Versions</h2>
+					</div>
+					<div class="px-6 pb-6">
 						<div class="w-full overflow-x-auto">
 							<div class="relative h-96 w-full">
 								<canvas bind:this={pyMajorCanvas}></canvas>
 							</div>
 						</div>
 					</div>
-				</div>
+				</Card>
 			{/if}
 		{/await}
 
 		{#await data.pythonMinorStats}
-			<!-- waiting -->
+			<Card class="mb-8" padding="none">
+				<div class="p-6">
+					<h2 class="text-lg font-semibold">Python Minor Versions</h2>
+				</div>
+				<div class="px-6 pb-6">
+					<Skeleton h="h-96" />
+				</div>
+			</Card>
 		{:then minorArr}
 			{#if minorArr && minorArr.length > 0}
-				<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-					<div class="border-b px-6 py-4">
-						<h2 class="text-lg font-semibold text-gray-100">Python Minor Versions</h2>
-					</div>
+				<Card class="mb-8" padding="none">
 					<div class="p-6">
+						<h2 class="text-lg font-semibold">Python Minor Versions</h2>
+					</div>
+					<div class="px-6 pb-6">
 						<div class="w-full overflow-x-auto">
 							<div class="relative h-96 w-full">
 								<canvas bind:this={pyMinorCanvas}></canvas>
 							</div>
 						</div>
 					</div>
-				</div>
+				</Card>
 			{/if}
 		{/await}
 
 		{#await data.systemStats}
-			<!-- waiting -->
+			<Card class="mb-8" padding="none">
+				<div class="p-6">
+					<h2 class="text-lg font-semibold">System Downloads</h2>
+				</div>
+				<div class="px-6 pb-6">
+					<Skeleton h="h-96" />
+				</div>
+			</Card>
 		{:then sysArr}
 			{#if sysArr && sysArr.length > 0}
-				<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-					<div class="border-b px-6 py-4">
-						<h2 class="text-lg font-semibold text-gray-100">System Downloads</h2>
-					</div>
+				<Card class="mb-8" padding="none">
 					<div class="p-6">
+						<h2 class="text-lg font-semibold">System Downloads</h2>
+					</div>
+					<div class="px-6 pb-6">
 						<div class="w-full overflow-x-auto">
 							<div class="relative h-96 w-full">
 								<canvas bind:this={systemCanvas}></canvas>
 							</div>
 						</div>
 					</div>
-				</div>
+				</Card>
 			{/if}
 		{/await}
 
 		{#await (data as any).summaryTotals}
-			<!-- waiting -->
+			<Card class="mb-8" padding="none">
+				<div class="p-6">
+					<h2 class="text-lg font-semibold">Installer Breakdown</h2>
+				</div>
+				<div class="px-6 pb-6">
+					<Skeleton h="h-96" />
+				</div>
+			</Card>
 		{:then totals}
 			{#if totals && totals.installer}
-				<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 shadow-sm">
-					<div class="border-b px-6 py-4">
-						<h2 class="text-lg font-semibold text-gray-100">Installer Breakdown</h2>
-					</div>
+				<Card class="mb-8" padding="none">
 					<div class="p-6">
+						<h2 class="text-lg font-semibold">Installer Breakdown</h2>
+					</div>
+					<div class="px-6 pb-6">
 						<div class="relative h-96 w-full">
 							<canvas bind:this={installerCanvas}></canvas>
 						</div>
 					</div>
-				</div>
+				</Card>
 			{/if}
 		{/await}
 	{/if}
 
 	<!-- API Links -->
-	<div class="rounded-lg border border-gray-800 bg-gray-900 p-6">
-		<h3 class="mb-4 text-lg font-semibold text-gray-100">API Links</h3>
-		<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
+	<Card>
+		<h3 class="text-lg font-semibold">API Links</h3>
+		<div class="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
 			{#each apiEndpoints as ep}
-				<div
-					class="flex items-center justify-between rounded-md border border-gray-800 bg-gray-950 px-3 py-2"
-				>
+				<Card padding="sm" class="flex items-center justify-between">
 					<div class="min-w-0">
-						<div class="text-gray-300">{ep.label}</div>
+						<div class="truncate">{ep.label}</div>
 						<a
-							class="truncate text-xs text-blue-400 hover:text-blue-300"
+							class="block truncate text-xs text-[var(--color-primary-500)]"
 							href={endpointUrl(ep.path)}
 							rel="noopener"
-							target="_blank">{endpointUrl(ep.path)}</a
-							>
+							target="_blank"
+							>{endpointUrl(ep.path)}</a
+						>
 					</div>
-					<button
-						class="ml-3 shrink-0 rounded-md border border-blue-700 bg-blue-800 px-2 py-1 text-xs text-white hover:bg-blue-700"
-						onclick={() => navigator.clipboard?.writeText(endpointUrl(ep.path))}
-						aria-label={`Copy ${ep.label} URL`}
-					>
-						Copy
-					</button>
-				</div>
+					<div class="ml-3 shrink-0">
+						<Button
+							size="sm"
+							onclick={() => navigator.clipboard?.writeText(endpointUrl(ep.path))}
+							aria-label={`Copy ${ep.label} URL`}
+						>
+							Copy
+						</Button>
+					</div>
+				</Card>
 			{/each}
 		</div>
-	</div>
+	</Card>
 </div>

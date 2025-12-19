@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MetaTags } from 'svelte-meta-tags';
+	import Card from '$lib/components/ui/Card.svelte';
 </script>
 
 <MetaTags
@@ -8,77 +9,74 @@
 	keywords={["PyPI Stats FAQ", "frequently asked questions", "Python package statistics", "API usage", "data accuracy", "download statistics"]}
 />
 
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="mb-8 text-3xl font-bold text-gray-100">Frequently Asked Questions</h1>
-	
-	<div class="space-y-8">
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">What is PyPI Stats?</h2>
-            <p class="text-gray-400">
-				PyPI Stats is a service that provides download statistics for Python packages from the Python Package Index (PyPI). 
-				We collect and process download data to help developers understand package usage patterns.
+<div class="mx-auto max-w-4xl py-12">
+	<h1 class="text-3xl font-bold tracking-tight">Frequently Asked Questions</h1>
+
+	<div class="mt-8 space-y-4">
+		<Card>
+			<h2 class="text-xl font-semibold">What is PyPI Stats?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				PyPI Stats provides download statistics for Python packages from PyPI. We collect and process
+				download data to help developers understand package usage patterns.
 			</p>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">How accurate is the data?</h2>
-            <p class="text-gray-400">
-				Our data comes directly from PyPI's download logs, so it represents actual downloads from PyPI's CDN. 
-				However, this may not capture all downloads if users are using mirrors or other distribution methods.
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">How accurate is the data?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				Our data comes from PyPI's download logs, so it represents actual downloads from PyPI's CDN. It may
+				not capture all downloads if users are using mirrors or other distribution methods.
 			</p>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">How often is the data updated?</h2>
-            <p class="text-gray-400">
-				We process new data daily from PyPI's BigQuery dataset. Recent statistics (day, week, month) are updated more frequently.
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">How often is the data updated?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				We process new data daily from PyPI's BigQuery dataset. Recent statistics (day, week, month) are
+				updated more frequently.
 			</p>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">What do the different download categories mean?</h2>
-            <ul class="list-disc pl-6 text-gray-400">
-				<li><strong>Overall:</strong> Total downloads, with options for including or excluding mirror downloads</li>
-				<li><strong>Python Major:</strong> Downloads by Python major version (2.x vs 3.x)</li>
-				<li><strong>Python Minor:</strong> Downloads by specific Python versions (2.7, 3.6, 3.7, etc.)</li>
-				<li><strong>System:</strong> Downloads by operating system (Windows, Linux, macOS)</li>
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">What do the different download categories mean?</h2>
+			<ul class="mt-3 list-disc pl-6 text-sm text-[var(--color-surface-400-600)]">
+				<li><strong class="text-[var(--color-surface-50-950)]">Overall:</strong> Total downloads</li>
+				<li><strong class="text-[var(--color-surface-50-950)]">Python Major:</strong> Downloads by 2.x vs 3.x</li>
+				<li><strong class="text-[var(--color-surface-50-950)]">Python Minor:</strong> Downloads by version (3.11, etc.)</li>
+				<li><strong class="text-[var(--color-surface-50-950)]">System:</strong> Downloads by OS</li>
 			</ul>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">Is the API free to use?</h2>
-            <p class="text-gray-400">
-				Yes, all our API endpoints are free to use. We don't require authentication for basic usage, 
-				though we may implement rate limiting to ensure fair usage.
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">Is the API free to use?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				Yes, all our API endpoints are free to use. We may implement rate limiting to ensure fair usage.
 			</p>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">How do I use the API?</h2>
-            <p class="text-gray-400">
-				Our API provides RESTful endpoints that return JSON data. You can find detailed documentation 
-                on our <a href="/api" class="text-blue-400 hover:text-blue-300">API page</a>.
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">How do I use the API?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				Our API provides RESTful endpoints that return JSON. See the <a href="/api">API page</a> for details.
 			</p>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">Why don't I see data for my package?</h2>
-            <p class="text-gray-400">
-				If your package doesn't appear in our database, it might be because:
-			</p>
-            <ul class="list-disc pl-6 text-gray-400">
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">Why don't I see data for my package?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">This can happen if:</p>
+			<ul class="mt-2 list-disc pl-6 text-sm text-[var(--color-surface-400-600)]">
 				<li>The package has very few downloads</li>
 				<li>The package is relatively new and hasn't been processed yet</li>
-				<li>There might be an issue with the package name format</li>
+				<li>There’s an issue with the package name format</li>
 			</ul>
-		</div>
-		
-		<div>
-            <h2 class="mb-3 text-xl font-semibold text-gray-100">Can I contribute to PyPI Stats?</h2>
-            <p class="text-gray-400">
-				Yes! PyPI Stats is open source. You can contribute by reporting bugs, suggesting features, 
-				or submitting pull requests on our GitHub repository.
+		</Card>
+
+		<Card>
+			<h2 class="text-xl font-semibold">Can I contribute to PyPI Stats?</h2>
+			<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+				Yes! PyPI Stats is open source. You can contribute by reporting bugs, suggesting features, or submitting
+				pull requests on GitHub.
 			</p>
-		</div>
+		</Card>
 	</div>
-</div> 
+</div>
