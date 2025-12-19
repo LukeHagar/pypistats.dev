@@ -15,7 +15,10 @@
 
 	// `card` provides the Skeleton card utility (radius, hover behavior via `card-hover` when needed).
 	// `preset-filled` sets a theme-aware surface + text color pair.
-	const classes = $derived(`card preset-filled ${paddingClass} ${className}`.trim());
+	// `preset-outlined-surface-200-800` provides a subtle edge that reads well in Wintry dark-only.
+	const classes = $derived(
+		`card preset-filled preset-outlined-surface-200-800 ${paddingClass} ${className}`.trim()
+	);
 </script>
 
 <div class={classes}>

@@ -204,8 +204,17 @@ export const GET: RequestHandler = async (event) => {
   }
 };
 
+// Cool/Wintry leaning palette (blues/teals/purples) for PNG charts.
+// Note: these are used server-side (no CSS theme vars available).
 const palette = [
-  '#2563eb', '#16a34a', '#dc2626', '#7c3aed', '#ea580c', '#0891b2', '#ca8a04', '#4b5563'
+  '#60a5fa', // ice blue
+  '#38bdf8', // sky
+  '#22d3ee', // cyan
+  '#2dd4bf', // teal
+  '#a78bfa', // lavender
+  '#818cf8', // indigo
+  '#f472b6', // pink accent
+  '#94a3b8'  // slate
 ];
 
 

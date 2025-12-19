@@ -14,3 +14,27 @@
 .prose {
 	@apply prose-invert;
 }
+
+/* App-wide cohesion helpers (Wintry dark-only) */
+@layer base {
+	/* Ensure non-prose links match Skeleton's anchor token behavior */
+	a {
+		@apply anchor;
+	}
+}
+
+@layer utilities {
+	/* Prefer these over repeating text-[var(...)] everywhere */
+	.text-muted {
+		color: var(--color-surface-400-600);
+	}
+	.text-strong {
+		color: var(--color-surface-50-950);
+	}
+	.bg-inset {
+		background-color: var(--color-surface-100-900);
+	}
+	.border-subtle {
+		border-color: var(--color-surface-200-800);
+	}
+}

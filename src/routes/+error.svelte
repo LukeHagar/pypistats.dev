@@ -7,25 +7,25 @@
 <div class="mx-auto max-w-3xl py-16">
 	<Card class="p-8">
 		<h1 class="text-2xl font-semibold">Something went wrong</h1>
-		<p class="mt-2 text-sm text-[var(--color-surface-400-600)]">
+		<p class="mt-2 text-sm text-muted">
 			We hit an unexpected error while loading this page.
 		</p>
 
-		<div class="mt-6 space-y-2 text-sm text-[var(--color-surface-400-600)]">
+		<div class="mt-6 space-y-2 text-sm text-muted">
 			<div>
-				<span class="font-medium text-[var(--color-surface-50-950)]">Status:</span>
+				<span class="font-medium text-strong">Status:</span>
 				{$page.status}
 			</div>
 			{#if $page.error?.message}
 				<div>
-					<span class="font-medium text-[var(--color-surface-50-950)]">Message:</span>
+					<span class="font-medium text-strong">Message:</span>
 					{$page.error.message}
 				</div>
 			{/if}
 			{#if $page.error?.requestId}
 				<div>
-					<span class="font-medium text-[var(--color-surface-50-950)]">Request ID:</span>
-					<code class="rounded bg-[var(--color-surface-100-900)] px-2 py-0.5 text-[var(--color-surface-50-950)]"
+					<span class="font-medium text-strong">Request ID:</span>
+					<code class="rounded bg-inset px-2 py-0.5 text-strong"
 						>{$page.error.requestId}</code
 					>
 				</div>

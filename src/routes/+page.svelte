@@ -21,7 +21,7 @@
 <div class="py-12">
 	<div class="text-center">
 		<h1 class="text-4xl font-bold tracking-tight">PyPI Stats</h1>
-		<p class="mt-3 text-lg text-[var(--color-surface-400-600)]">
+		<p class="mt-3 text-lg text-muted">
 			Download statistics for Python packages
 		</p>
 
@@ -33,7 +33,7 @@
 			</form>
 		</div>
 
-		<div class="mt-8 text-sm text-[var(--color-surface-400-600)]">
+		<div class="mt-8 text-sm text-muted">
 			Tracking
 			{#await data.packageCount}
 				<Skeleton w="w-24" h="h-3" class="inline-block align-middle" />
@@ -50,7 +50,7 @@
 	<div class="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
 		<Card>
 			<h3 class="text-lg font-semibold">Popular Packages (last 30 days)</h3>
-			<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">
+			<p class="mt-1 text-sm text-muted">
 				Top projects by downloads (without mirrors)
 			</p>
 
@@ -63,24 +63,24 @@
 							{#each popular as row}
 								<li class="flex items-center justify-between py-2">
 									<a href="/packages/{row.package}" data-sveltekit-preload-data="off">{row.package}</a>
-									<span class="text-sm text-[var(--color-surface-400-600)]"
+									<span class="text-sm text-muted"
 										>{row.downloads.toLocaleString()}</span
 									>
 								</li>
 							{/each}
 						</ul>
 					{:else}
-						<div class="text-sm text-[var(--color-surface-400-600)]">No data yet.</div>
+						<div class="text-sm text-muted">No data yet.</div>
 					{/if}
 				{:catch}
-					<div class="text-sm text-[var(--color-surface-400-600)]">Failed to load.</div>
+					<div class="text-sm text-muted">Failed to load.</div>
 				{/await}
 			</div>
 		</Card>
 
 		<Card>
 			<h3 class="text-lg font-semibold">API Access</h3>
-			<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">
+			<p class="mt-1 text-sm text-muted">
 				Programmatic access to download statistics
 			</p>
 
@@ -98,7 +98,7 @@
 
 		<Card>
 			<h3 class="text-lg font-semibold">About PyPI Stats</h3>
-			<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">
+			<p class="mt-1 text-sm text-muted">
 				Learn more about PyPI Stats and how it works
 			</p>
 

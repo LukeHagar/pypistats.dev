@@ -48,7 +48,7 @@
 									data-sveltekit-preload-data="off"
 								>
 									<div class="text-lg font-medium">{pkg}</div>
-									<div class="text-sm text-[var(--color-surface-400-600)]">
+									<div class="text-sm text-muted">
 										View download statistics
 									</div>
 								</a>
@@ -56,7 +56,7 @@
 						</div>
 					</Card>
 				{:else}
-					<div class="py-12 text-center text-[var(--color-surface-400-600)]">
+					<div class="py-12 text-center text-muted">
 						<p class="text-lg">No packages found</p>
 						<p class="text-sm">Try searching for a different package name</p>
 					</div>

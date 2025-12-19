@@ -146,10 +146,15 @@
 			return color;
 		};
 
-		const chartText = resolveCssColor('--base-font-color-dark', 'rgb(229, 231, 235)');
-		const chartGrid = resolveCssColor('--color-surface-200-800', 'rgba(255, 255, 255, 0.12)');
-		const chartMuted = resolveCssColor('--color-surface-400-600', 'rgba(255, 255, 255, 0.7)');
-		const tooltipBg = resolveCssBg('--color-surface-100-900', 'rgba(17, 24, 39, 0.95)');
+		// Prefer token-driven styling; fall back to the current computed body colors rather than hard-coded grays.
+		const bodyStyles = typeof window !== 'undefined' ? getComputedStyle(document.body) : null;
+		const fallbackText = bodyStyles?.color || 'white';
+		const fallbackBg = bodyStyles?.backgroundColor || 'black';
+
+		const chartText = resolveCssColor('--base-font-color-dark', fallbackText);
+		const chartGrid = resolveCssColor('--color-surface-200-800', fallbackText);
+		const chartMuted = resolveCssColor('--color-surface-400-600', fallbackText);
+		const tooltipBg = resolveCssBg('--color-surface-100-900', fallbackBg);
 		const qs = new URLSearchParams({ format: 'json', chart: 'line', ...params });
 		const resp = await fetch(
 			`/api/packages/${encodeURIComponent(data.packageName)}/chart/${type}?${qs.toString()}`
@@ -259,7 +264,7 @@
 <div class="py-12">
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold tracking-tight">{data.packageName}</h1>
-		<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Download statistics from PyPI</p>
+		<p class="mt-1 text-sm text-muted">Download statistics from PyPI</p>
 
 		{#if data.meta}
 			{#await data.meta}
@@ -339,12 +344,12 @@
 		<Card class="mb-8" padding="none">
 			<div class="p-6">
 				<h2 class="text-lg font-semibold">Recent Downloads</h2>
-				<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Recent + overall breakdowns</p>
+				<p class="mt-1 text-sm text-muted">Recent + overall breakdowns</p>
 			</div>
 			<div class="px-6 pb-6">
 				<div class="flex flex-wrap gap-6">
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Recent</h4>
+						<h4 class="mb-2 text-sm font-semibold text-strong">Recent</h4>
 						{#await data.recentStats}
 							<SkeletonTable cols={2} rows={2} />
 						{:then rs}
@@ -371,7 +376,7 @@
 						{/await}
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Overall</h4>
+						<h4 class="mb-2 text-sm font-semibold text-strong">Overall</h4>
 						{#await (data as any).summaryTotals}
 							<SkeletonTable cols={2} rows={6} />
 						{:then totals}
@@ -398,7 +403,7 @@
 						{/await}
 					</div>
 					<div class="max-w-full min-w-[280px] flex-1 grow">
-						<h4 class="mb-2 text-sm font-semibold text-[var(--color-surface-50-950)]">Systems</h4>
+						<h4 class="mb-2 text-sm font-semibold text-strong">Systems</h4>
 						{#await (data as any).summaryTotals}
 							<SkeletonTable cols={2} rows={6} />
 						{:then totals}
@@ -441,7 +446,7 @@
 								</thead>
 								<tbody>
 									{#each buildPythonVersionRows(totals?.python_major || {}, totals?.python_minor || {}) as row}
-										<tr class={row.kind === 'major' ? 'bg-[var(--color-surface-100-900)]' : ''}>
+										<tr class={row.kind === 'major' ? 'bg-inset' : ''}>
 											<td class="capitalize">
 												{#if row.kind === 'major'}
 													Python {row.label}
@@ -468,7 +473,7 @@
 		<Card class="mb-8" padding="none">
 			<div class="p-6">
 				<h2 class="text-lg font-semibold">Overall Downloads Over Time</h2>
-				<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">Includes with and without mirrors</p>
+				<p class="mt-1 text-sm text-muted">Includes with and without mirrors</p>
 			</div>
 			<div class="px-6 pb-6">
 				<div class="w-full overflow-x-auto">

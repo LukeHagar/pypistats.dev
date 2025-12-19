@@ -39,21 +39,21 @@
 		<div class="not-prose grid grid-cols-1 gap-6 md:grid-cols-2">
 			<Card>
 				<h3 class="text-lg font-semibold">Frontend</h3>
-				<ul class="mt-3 space-y-2 text-sm text-[var(--color-surface-400-600)]">
-					<li><strong class="text-[var(--color-surface-50-950)]">SvelteKit</strong> - reactive UI framework</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">TypeScript</strong> - type-safe JS</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">Tailwind</strong> + <strong class="text-[var(--color-surface-50-950)]">Skeleton</strong> - design system</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">Chart.js</strong> - charts</li>
+				<ul class="mt-3 space-y-2 text-sm text-muted">
+					<li><strong class="text-strong">SvelteKit</strong> - reactive UI framework</li>
+					<li><strong class="text-strong">TypeScript</strong> - type-safe JS</li>
+					<li><strong class="text-strong">Tailwind</strong> + <strong class="text-strong">Skeleton</strong> - design system</li>
+					<li><strong class="text-strong">Chart.js</strong> - charts</li>
 				</ul>
 			</Card>
 
 			<Card>
 				<h3 class="text-lg font-semibold">Backend & Data</h3>
-				<ul class="mt-3 space-y-2 text-sm text-[var(--color-surface-400-600)]">
-					<li><strong class="text-[var(--color-surface-50-950)]">PostgreSQL</strong> - primary datastore</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">Redis</strong> - caching + locks</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">BigQuery</strong> - PyPI logs</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">Prisma</strong> - ORM</li>
+				<ul class="mt-3 space-y-2 text-sm text-muted">
+					<li><strong class="text-strong">PostgreSQL</strong> - primary datastore</li>
+					<li><strong class="text-strong">Redis</strong> - caching + locks</li>
+					<li><strong class="text-strong">BigQuery</strong> - PyPI logs</li>
+					<li><strong class="text-strong">Prisma</strong> - ORM</li>
 				</ul>
 			</Card>
 		</div>
@@ -61,10 +61,10 @@
 		<div class="not-prose mt-6">
 			<Card>
 				<h3 class="text-lg font-semibold">Infrastructure & Deployment</h3>
-				<ul class="mt-3 space-y-2 text-sm text-[var(--color-surface-400-600)]">
-					<li><strong class="text-[var(--color-surface-50-950)]">Docker Compose</strong> - container stack</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">OpenAPI</strong> - standardized API docs</li>
-					<li><strong class="text-[var(--color-surface-50-950)]">Scalar</strong> - interactive API UI</li>
+				<ul class="mt-3 space-y-2 text-sm text-muted">
+					<li><strong class="text-strong">Docker Compose</strong> - container stack</li>
+					<li><strong class="text-strong">OpenAPI</strong> - standardized API docs</li>
+					<li><strong class="text-strong">Scalar</strong> - interactive API UI</li>
 				</ul>
 			</Card>
 		</div>
@@ -85,7 +85,7 @@
 			<Card class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h3 class="text-lg font-semibold">GitHub Repository</h3>
-					<p class="mt-1 text-sm text-[var(--color-surface-400-600)]">
+					<p class="mt-1 text-sm text-muted">
 						View the source code, report issues, or contribute.
 					</p>
 				</div>
